@@ -7,7 +7,27 @@
     </ApplicationDefinition>
   </ItemGroup>
   <ItemGroup>
+    <Compile Update="Tabs\CampaignsTab\CampaignsWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Tabs\MonitoringTab\MonitoringWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Update="Tabs\SettingsTab\SettingsWindow.xaml.cs">
+      <SubType>Code</SubType>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
     <Page Update="MainWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Tabs\CampaignsTab\CampaignsWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Tabs\MonitoringTab\MonitoringWindow.xaml">
+      <SubType>Designer</SubType>
+    </Page>
+    <Page Update="Tabs\SettingsTab\SettingsWindow.xaml">
       <SubType>Designer</SubType>
     </Page>
   </ItemGroup>
