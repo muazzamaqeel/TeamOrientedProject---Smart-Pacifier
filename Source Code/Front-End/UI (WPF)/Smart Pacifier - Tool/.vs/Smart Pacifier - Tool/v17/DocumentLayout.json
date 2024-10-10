@@ -1,28 +1,7 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\",
-  "Documents": [
-    {
-      "AbsoluteMoniker": "D:0:0:{7DB10AEA-1D49-44FF-8D7E-61BAB999E1FA}|Smart Pacifier - Tool\\Smart Pacifier - Tool.csproj|c:\\programming\\teamorientedproject---smart-pacifier\\source code\\smart pacifier - tool\\smart pacifier - tool\\tabs\\campaignstab\\campaignswindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{7DB10AEA-1D49-44FF-8D7E-61BAB999E1FA}|Smart Pacifier - Tool\\Smart Pacifier - Tool.csproj|solutionrelative:smart pacifier - tool\\tabs\\campaignstab\\campaignswindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7DB10AEA-1D49-44FF-8D7E-61BAB999E1FA}|Smart Pacifier - Tool\\Smart Pacifier - Tool.csproj|c:\\programming\\teamorientedproject---smart-pacifier\\source code\\smart pacifier - tool\\smart pacifier - tool\\tabs\\settingstab\\settingswindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{7DB10AEA-1D49-44FF-8D7E-61BAB999E1FA}|Smart Pacifier - Tool\\Smart Pacifier - Tool.csproj|solutionrelative:smart pacifier - tool\\tabs\\settingstab\\settingswindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7DB10AEA-1D49-44FF-8D7E-61BAB999E1FA}|Smart Pacifier - Tool\\Smart Pacifier - Tool.csproj|c:\\programming\\teamorientedproject---smart-pacifier\\source code\\smart pacifier - tool\\smart pacifier - tool\\tabs\\monitoringtab\\monitoringwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{7DB10AEA-1D49-44FF-8D7E-61BAB999E1FA}|Smart Pacifier - Tool\\Smart Pacifier - Tool.csproj|solutionrelative:smart pacifier - tool\\tabs\\monitoringtab\\monitoringwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7DB10AEA-1D49-44FF-8D7E-61BAB999E1FA}|Smart Pacifier - Tool\\Smart Pacifier - Tool.csproj|c:\\programming\\teamorientedproject---smart-pacifier\\source code\\smart pacifier - tool\\smart pacifier - tool\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
-      "RelativeMoniker": "D:0:0:{7DB10AEA-1D49-44FF-8D7E-61BAB999E1FA}|Smart Pacifier - Tool\\Smart Pacifier - Tool.csproj|solutionrelative:smart pacifier - tool\\mainwindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{7DB10AEA-1D49-44FF-8D7E-61BAB999E1FA}|Smart Pacifier - Tool\\Smart Pacifier - Tool.csproj|c:\\programming\\teamorientedproject---smart-pacifier\\source code\\smart pacifier - tool\\smart pacifier - tool\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{7DB10AEA-1D49-44FF-8D7E-61BAB999E1FA}|Smart Pacifier - Tool\\Smart Pacifier - Tool.csproj|solutionrelative:smart pacifier - tool\\mainwindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    }
-  ],
+  "WorkspaceRootPath": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Front-End\\UI (WPF)\\Smart Pacifier - Tool\\",
+  "Documents": [],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -30,71 +9,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 356,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": -1,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "CampaignsWindow.xaml",
-              "DocumentMoniker": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\Smart Pacifier - Tool\\Tabs\\CampaignsTab\\CampaignsWindow.xaml",
-              "RelativeDocumentMoniker": "Smart Pacifier - Tool\\Tabs\\CampaignsTab\\CampaignsWindow.xaml",
-              "ToolTip": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\Smart Pacifier - Tool\\Tabs\\CampaignsTab\\CampaignsWindow.xaml",
-              "RelativeToolTip": "Smart Pacifier - Tool\\Tabs\\CampaignsTab\\CampaignsWindow.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2024-10-10T12:00:58.074Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "SettingsWindow.xaml",
-              "DocumentMoniker": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\Smart Pacifier - Tool\\Tabs\\SettingsTab\\SettingsWindow.xaml",
-              "RelativeDocumentMoniker": "Smart Pacifier - Tool\\Tabs\\SettingsTab\\SettingsWindow.xaml",
-              "ToolTip": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\Smart Pacifier - Tool\\Tabs\\SettingsTab\\SettingsWindow.xaml",
-              "RelativeToolTip": "Smart Pacifier - Tool\\Tabs\\SettingsTab\\SettingsWindow.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2024-10-10T12:00:37.497Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "MonitoringWindow.xaml",
-              "DocumentMoniker": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\Smart Pacifier - Tool\\Tabs\\MonitoringTab\\MonitoringWindow.xaml",
-              "RelativeDocumentMoniker": "Smart Pacifier - Tool\\Tabs\\MonitoringTab\\MonitoringWindow.xaml",
-              "ToolTip": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\Smart Pacifier - Tool\\Tabs\\MonitoringTab\\MonitoringWindow.xaml",
-              "RelativeToolTip": "Smart Pacifier - Tool\\Tabs\\MonitoringTab\\MonitoringWindow.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2024-10-10T12:00:19.536Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "MainWindow.xaml",
-              "DocumentMoniker": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\Smart Pacifier - Tool\\MainWindow.xaml",
-              "RelativeDocumentMoniker": "Smart Pacifier - Tool\\MainWindow.xaml",
-              "ToolTip": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\Smart Pacifier - Tool\\MainWindow.xaml",
-              "RelativeToolTip": "Smart Pacifier - Tool\\MainWindow.xaml",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
-              "WhenOpened": "2024-10-10T09:50:43.99Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "MainWindow.xaml.cs",
-              "DocumentMoniker": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\Smart Pacifier - Tool\\MainWindow.xaml.cs",
-              "RelativeDocumentMoniker": "Smart Pacifier - Tool\\MainWindow.xaml.cs",
-              "ToolTip": "C:\\programming\\TeamOrientedProject---Smart-Pacifier\\Source Code\\Smart Pacifier - Tool\\Smart Pacifier - Tool\\MainWindow.xaml.cs",
-              "RelativeToolTip": "Smart Pacifier - Tool\\MainWindow.xaml.cs",
-              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2024-10-10T09:50:38.405Z"
             }
           ]
         }
