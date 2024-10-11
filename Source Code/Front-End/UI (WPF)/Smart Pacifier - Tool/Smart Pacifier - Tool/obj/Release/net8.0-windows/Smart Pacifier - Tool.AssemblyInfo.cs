@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Smart Pacifier - Tool")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+66db4578b4b06b6eadb39998199551cff7f4c711")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+a6e801cabd3571be906952fc437a2683e6a8d495")]
 [assembly: System.Reflection.AssemblyProductAttribute("Smart Pacifier - Tool")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Smart Pacifier - Tool")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
