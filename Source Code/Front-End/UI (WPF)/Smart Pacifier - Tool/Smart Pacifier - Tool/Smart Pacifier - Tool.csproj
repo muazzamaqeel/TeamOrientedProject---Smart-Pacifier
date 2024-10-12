@@ -9,4 +9,9 @@
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\Back-End\BackEndService\BackEndService\BackEndService.csproj" />
+    <ProjectReference Include="..\..\..\..\Interface\Interface_NETInterop\Interface_NETInterop\Interface_NETInterop.csproj" />
+  </ItemGroup>
+
 </Project>

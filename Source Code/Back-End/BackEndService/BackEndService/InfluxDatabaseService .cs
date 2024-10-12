@@ -11,49 +11,66 @@ namespace BackEndService
     public class InfluxDatabaseService : IDatabaseService
     {
         private readonly InfluxDBClient _client;
-        private readonly string _bucket = "SmartPacifier-Bucket1"; // Match with the bucket name in InfluxDB
-        private readonly string _org = "thu-de";  // Match with your organization name
+        private readonly string _bucket = "SmartPacifier-Bucket1";  // Correct bucket name
+        private readonly string _org = "thu-de";                    // Correct organization name
 
         public InfluxDatabaseService(string url, string token)
         {
-            // Correct initialization of the InfluxDB client
+            // Initialize the InfluxDB client with the correct URL and token
             _client = new InfluxDBClient(url, token);
         }
 
         public void WriteData(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
         {
-            // Create a new PointData for the measurement
-            var point = PointData.Measurement(measurement)
-                                 .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
-
-            // Add each tag to the point
-            foreach (var tag in tags)
+            try
             {
-                point = point.Tag(tag.Key, tag.Value);
-            }
+                // Create a new PointData for the measurement
+                var point = PointData.Measurement(measurement)
+                                     .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
 
-            // Add each field to the point
-            foreach (var field in fields)
+                // Add each tag to the point
+                foreach (var tag in tags)
+                {
+                    point = point.Tag(tag.Key, tag.Value);
+                }
+
+                // Add each field to the point
+                foreach (var field in fields)
+                {
+                    point = point.Field(field.Key, field.Value);
+                }
+
+                using (var writeApi = _client.GetWriteApi())
+                {
+                    // Write the point to InfluxDB using the correct arguments
+                    writeApi.WritePoint(point, _bucket, _org);
+                }
+
+                Console.WriteLine("Data written to InfluxDB.");
+            }
+            catch (Exception ex)
             {
-                point = point.Field(field.Key, field.Value);
+                Console.WriteLine($"Error writing data to InfluxDB: {ex.Message}");
+                throw;
             }
-
-            using (var writeApi = _client.GetWriteApi())
-            {
-                // Write the point to InfluxDB using the correct arguments
-                writeApi.WritePoint(point, _bucket, _org);
-            }
-
-            Console.WriteLine("Data written to InfluxDB.");
         }
 
         public List<string> ReadData(string query)
         {
-            var queryApi = _client.GetQueryApi();
-            var fluxQuery = queryApi.QueryAsync(query, _org);
+            try
+            {
+                var queryApi = _client.GetQueryApi();
+                var fluxQuery = queryApi.QueryAsync(query, _org);
 
-            // Convert the query result to a list of strings
-            return fluxQuery?.Result.Select(x => x.ToString()).ToList() ?? new List<string>();
+                // Convert the query result to a list of strings
+                return fluxQuery?.Result.Select(x => x.ToString()).ToList() ?? new List<string>();
+            }
+            catch (Exception ex)
+            {
+                // Log more detailed error message
+                Console.WriteLine($"Error reading data from InfluxDB: {ex.Message}");
+                throw new UnauthorizedAccessException("Unauthorized access. Check token and permissions.", ex);
+            }
         }
     }
 }
