@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using System.Windows.Controls;
 
+
 namespace Smart_Pacifier___Tool
 {
     public partial class MainWindow : Window
