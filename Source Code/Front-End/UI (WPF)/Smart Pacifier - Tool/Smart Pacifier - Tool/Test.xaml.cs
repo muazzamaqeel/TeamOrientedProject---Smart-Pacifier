@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows;
-using Interface_NETInterop;  // Reference 
-using BackEndService;        // Reference 
+using Interface_NETInterop;  // Reference to interface
+using BackEndService;        // Reference to back-end service
 
 namespace Smart_Pacifier___Tool
 {
@@ -14,8 +14,8 @@ namespace Smart_Pacifier___Tool
         {
             InitializeComponent();
 
-            // Initialize the InfluxDatabaseService with the InfluxDB URL and the provided token
-            _databaseService = new InfluxDatabaseService("http://localhost:8086", "F3GXAaIr_gF4_GEFIE5otsy9UC-qcfRYwYYM2ojrga2YTxTi2lQPePxBgevqowEb6eIgmn1mih0ktZUgBSz1GA==");
+            // Initialize the InfluxDatabaseService as a Singleton
+            _databaseService = InfluxDatabaseService.GetInstance("http://localhost:8086", "F3GXAaIr_gF4_GEFIE5otsy9UC-qcfRYwYYM2ojrga2YTxTi2lQPePxBgevqowEb6eIgmn1mih0ktZUgBSz1GA==");
         }
 
         // Write data button click event
@@ -23,7 +23,6 @@ namespace Smart_Pacifier___Tool
         {
             try
             {
-                // Sample data to write to InfluxDB
                 var fields = new Dictionary<string, object>
                 {
                     { "temperature", 37.2 },
@@ -35,9 +34,7 @@ namespace Smart_Pacifier___Tool
                     { "sensor", "pacifier1" }
                 };
 
-                // Write the data to InfluxDB with the correct bucket name
                 _databaseService.WriteData("environment", fields, tags);
-
                 MessageBox.Show("Data written to SmartPacifier-Bucket1.");
             }
             catch (Exception ex)
@@ -51,17 +48,13 @@ namespace Smart_Pacifier___Tool
         {
             try
             {
-                // Query to read data from the last hour
                 string fluxQuery = @"
                     from(bucket: ""SmartPacifier-Bucket1"")
                     |> range(start: -1h)
                     |> filter(fn: (r) => r._measurement == ""environment"")
                 ";
 
-                // Read the data from InfluxDB
                 var results = _databaseService.ReadData(fluxQuery);
-
-                // Display the results in the TextBox
                 ResultsTextBox.Text = string.Join(Environment.NewLine, results);
             }
             catch (UnauthorizedAccessException ex)
