@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Writes;
@@ -14,21 +13,21 @@ namespace BackEndService
         private static readonly object _lock = new object();
 
         private readonly InfluxDBClient _client;
-        private readonly string _bucket = "SmartPacifier-Bucket1";  // Correct bucket name
-        private readonly string _org = "thu-de";                    // Correct organization name
+        private readonly string _bucket = "SmartPacifier-Bucket1";
+        private readonly string _org = "thu-de";  // Replace with your actual organization name
 
-        // Private constructor to prevent multiple instances
+        // Private constructor to prevent direct instantiation
         private InfluxDatabaseService(string url, string token)
         {
-            _client = new InfluxDBClient(url, token);
+            _client = InfluxDBClientFactory.Create(url, token);
         }
 
-        // Singleton implementation
+        // Singleton method to get the instance of the service
         public static InfluxDatabaseService GetInstance(string url, string token)
         {
             if (_instance == null)
             {
-                lock (_lock) // Thread safety
+                lock (_lock)
                 {
                     if (_instance == null)
                     {
@@ -44,7 +43,7 @@ namespace BackEndService
             try
             {
                 var point = PointData.Measurement(measurement)
-                                     .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
+                    .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
 
                 foreach (var tag in tags)
                 {
@@ -60,13 +59,10 @@ namespace BackEndService
                 {
                     writeApi.WritePoint(point, _bucket, _org);
                 }
-
-                Console.WriteLine("Data written to InfluxDB.");
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error writing data to InfluxDB: {ex.Message}");
-                throw;
+                throw new Exception($"Error writing data: {ex.Message}");
             }
         }
 
@@ -75,13 +71,20 @@ namespace BackEndService
             try
             {
                 var queryApi = _client.GetQueryApi();
-                var fluxQuery = queryApi.QueryAsync(query, _org);
+                var tables = queryApi.QueryAsync(query, _org).Result;
 
-                return fluxQuery?.Result.Select(x => x.ToString()).ToList() ?? new List<string>();
+                var results = new List<string>();
+                foreach (var table in tables)
+                {
+                    foreach (var record in table.Records)
+                    {
+                        results.Add(record.ToString());
+                    }
+                }
+                return results;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error reading data from InfluxDB: {ex.Message}");
                 throw new UnauthorizedAccessException("Unauthorized access. Check token and permissions.", ex);
             }
         }

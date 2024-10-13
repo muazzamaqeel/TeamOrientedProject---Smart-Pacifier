@@ -1,0 +1,43 @@
+﻿<Window x:Class="Smart_Pacifier___Tool.Temp.AlgoTest"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Smart_Pacifier___Tool.Temp"
+        mc:Ignorable="d"
+        Title="AlgoTest" Height="450" Width="800">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="2*" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <!-- Python Code Input -->
+        <TextBox x:Name="PythonCodeInput" 
+                 Grid.Row="0" 
+                 Margin="10"
+                 AcceptsReturn="True" 
+                 VerticalScrollBarVisibility="Auto" 
+                 HorizontalScrollBarVisibility="Auto"
+                 Text="print('Hello from Python!')"/>
+
+        <!-- Run Python Button -->
+        <Button x:Name="RunPythonButton" 
+                Grid.Row="1" 
+                Margin="10" 
+                Width="100" 
+                Height="30" 
+                VerticalAlignment="Center"
+                HorizontalAlignment="Left"
+                Content="Run Python"
+                Click="RunPythonButton_Click"/>
+
+        <!-- Output Display -->
+        <TextBox x:Name="OutputTextBox" 
+                 Grid.Row="1" 
+                 Margin="120,10,10,10"
+                 VerticalScrollBarVisibility="Auto" 
+                 HorizontalScrollBarVisibility="Auto"
+                 IsReadOnly="True"/>
+    </Grid>
+</Window>
