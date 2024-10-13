@@ -16,12 +16,42 @@ storage the research project Smart Pacifier needs a Data Acquisition
 and Development Tool.
 
 # Table of Contents
+- [Installation](#installation)
 - [Documentation](#documentation)
-- [Style Guide for Code](#style-guide-for-code)
+- [Style Guide](#style-guide)
+- 
+
+# Installation
+*TODO*
 
 # Documentation
+*TODO*
 
-# Style Guide for Code
+# Style Guide
+
+## Branching Strategy
+We are following the Feature Branching strategy.
+
+Features are implemented separately in a feature branch additionally personal
+branches may be created.
+
+### Feature Branching Workflow
+
+1. Create `feature` branches: Create a new branch for each feature or task
+   you’re working on. This branch should be created from the main branch. The
+   branch must be named as follows: `feature-{JIRA TASK Number}-{FEATURE TITLE}`
+2. Work on the feature: After creating the `feature` branch, you can start
+   implementing the new feature by making as many commits as necessary. The
+   branch should only contain changes relating to that particular feature.
+3. Create a pull request: When you’re finished working on the `feature` branch,
+   you create a pull request to merge the changes into the main branch.
+4. Review and approve: Other developers review the changes in the pull request
+   and approve them if they are satisfied with the changes. Code review can help
+   catch issues or mistakes before they are merged into the main branch.
+5. Merge the `feature` branch: Once you’re done working on the feature, you can
+   merge the `feature` branch back into the `main` branch.
+6. Clean up: After merging, you can delete the `feature` branch, as it is no
+   longer needed.
 
 ## Indentation
 Use 4 spaces for indentation
