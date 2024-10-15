@@ -1,11 +1,29 @@
+using Xunit;
+
 namespace SmartPacifier___UITests
 {
     public class UnitTest1
     {
         [Fact]
-        public void Test1()
+        public void TestStringEquality()
         {
+            // Arrange
+            string expected = "Hello World";
+            string actual = "Hello World";
 
+            // Act & Assert
+            Assert.Equal(expected, actual);
+        }
+
+        [Fact]
+        public void TestStringContains()
+        {
+            // Arrange
+            string mainString = "Smart Pacifier Project";
+            string substring = "Pacifier";
+
+            // Act & Assert
+            Assert.Contains(substring, mainString);
         }
     }
 }
