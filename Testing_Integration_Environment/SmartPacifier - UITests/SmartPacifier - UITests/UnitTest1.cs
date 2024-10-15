@@ -22,6 +22,9 @@ namespace SmartPacifier___UITests
 
             // Act & Assert
             Assert.Contains(substring, mainString);
+
+
+            //Test Done
         }
     }
 }
