@@ -59,7 +59,7 @@ branches may be created.
 1. Create `feature` branches: Create a new branch for each feature or task
    you’re working on. This branch should be created from the
    `Staging-Environment` branch. The branch must be named as follows:
-   `feature-{JIRA TASK Number}-{FEATURE TITLE}`
+   `feature-{JIRA TASK Number}-{FEATURE_TITLE}`
 2. Work on the feature: After creating the `feature` branch, you can start
    implementing the new feature by making as many commits as necessary. The
    branch should only contain changes relating to that particular feature.
