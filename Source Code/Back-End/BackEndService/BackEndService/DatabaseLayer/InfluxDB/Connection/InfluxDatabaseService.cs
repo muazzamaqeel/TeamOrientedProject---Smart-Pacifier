@@ -7,6 +7,13 @@ using SmartPacifier.Interface.Services;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 {
+
+    //<summary>
+    //This class is a service class that connects to the InfluxDB database
+    //It implements the IDatabaseService interface
+    //The WriteData method writes data to the InfluxDB database
+    //The ReadData method reads data from the InfluxDB database
+    //</summary>
     public class InfluxDatabaseService : IDatabaseService
     {
         private static InfluxDatabaseService? _instance;
