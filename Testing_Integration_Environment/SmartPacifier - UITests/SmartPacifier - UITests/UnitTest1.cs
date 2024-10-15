@@ -10,8 +10,6 @@ namespace SmartPacifier___UITests
             // Arrange
             string expected = "Hello World";
             string actual = "Hello World";
-
-            // Act & Assert
             Assert.Equal(expected, actual);
         }
 
