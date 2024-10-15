@@ -15,12 +15,12 @@ namespace Smart_Pacifier___Tool
             IServiceFactory serviceFactory = new ServiceFactory();
 
             // Open the AlgoTest window
-            AlgoTest algoTestWindow = new AlgoTest(serviceFactory);
-            algoTestWindow.Show();
+            //AlgoTest algoTestWindow = new AlgoTest(serviceFactory);
+            //algoTestWindow.Show();
 
             // Uncomment the following if you want to open the Test window as well:
-            Test testWindow = new Test(serviceFactory);
-            testWindow.Show();
+            //Test testWindow = new Test(serviceFactory);
+            //testWindow.Show();
         }
     }
 }
