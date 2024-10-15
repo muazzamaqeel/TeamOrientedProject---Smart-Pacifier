@@ -1,32 +1,25 @@
 ﻿using System;
 using System.Windows;
-using Interface_NETInterop;  // Reference to interface
+using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Temp
 {
     public partial class AlgoTest : Window
     {
-        private readonly IAlgorithmService _algorithmService;
+        private readonly IAlgorithmLayer _algorithmService;
 
-        public AlgoTest(IServiceFactory serviceFactory)
+        public AlgoTest(IAlgorithmLayer algorithmService)
         {
             InitializeComponent();
-
-            // Use the factory to create the algorithm service
-            _algorithmService = serviceFactory.CreateAlgorithmService();
+            _algorithmService = algorithmService;
         }
 
         private void RunPythonButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                // Get Python code from input
                 string pythonCode = PythonCodeInput.Text;
-
-                // Run the Python code
-                string output = _algorithmService.RunPythonCode(pythonCode);
-
-                // Display the output in the TextBox
+                string output = _algorithmService.ExecuteScript(pythonCode);
                 OutputTextBox.Text = output;
             }
             catch (Exception ex)
