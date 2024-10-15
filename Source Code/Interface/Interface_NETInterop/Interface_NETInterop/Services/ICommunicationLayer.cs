@@ -1,6 +1,6 @@
 ﻿namespace SmartPacifier.Interface.Services
 {
-    public interface IBackendAlgorithmLayer
+    public interface ICommunicationLayer
     {
         string ExecuteScript(string pythonCode);
     }

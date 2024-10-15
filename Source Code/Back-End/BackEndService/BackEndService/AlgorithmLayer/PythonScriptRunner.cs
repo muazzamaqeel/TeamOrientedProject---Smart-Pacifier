@@ -3,6 +3,10 @@ using SmartPacifier.Interface.Services;
 
 namespace SmartPacifier.BackEnd.AlgorithmLayer
 {
+
+    /// <summary>
+    /// The PythonScriptEngine class is used to execute Python scripts
+    /// </summary>
     public class PythonScriptEngine : IAlgorithmLayer
     {
         private static PythonScriptEngine? _instance;
