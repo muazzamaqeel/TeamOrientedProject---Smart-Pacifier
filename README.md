@@ -19,9 +19,9 @@ Emma and Moosbauer, Sebastian.
 - [Installation](#installation)
 - [Setup](#setup)
 - [Documentation](#documentation)
-- [Folder Structure](#folder-structure)
-<details>
-<summary>- [Style Guide](#style-guide)</summary>
+- [Project Structure](#project-structure)
+- <details><summary> <a href="#style-guide">Style Guide</a> </summary>
+
 	- [Branching Strategy](#branch-strategy)
 	- [Indentation](#indentation)
 	- [Naming Convention](#naming-convention)
@@ -30,7 +30,6 @@ Emma and Moosbauer, Sebastian.
 	- [Comments](#comments)
 	- [Example](#example)
 </details>
-- 
 
 # Installation
 *TODO*
@@ -39,7 +38,19 @@ Emma and Moosbauer, Sebastian.
 
 
 # Documentation
-*TODO*
+For Documentation see: [Documentation](/Documentation)
+
+# Project Structure
+We have 4 individual projects:
+- Smart Pacifier: The Frontent Project
+- BackEndService: Providing access to Sensor data, DataBase & MQTT
+  Protocoll
+- AlogirthmLayer: Providing the capabilities for implementing
+  Algorithms
+- Interface: Providing the Interfaces to the FrontEnd/AlogrithmLayer
+
+The "Main Project" is the Smart Pacifcier Project, that Sets up all
+other projects.
 
 # Style Guide
 
@@ -59,7 +70,7 @@ branches may be created.
 1. Create `feature` branches: Create a new branch for each feature or task
    you’re working on. This branch should be created from the
    `Staging-Environment` branch. The branch must be named as follows:
-   `feature-{JIRA TASK Number}-{FEATURE_TITLE}`
+   `feature-{JIRA TASK Number}-{FEATURE-TITLE}`
 2. Work on the feature: After creating the `feature` branch, you can start
    implementing the new feature by making as many commits as necessary. The
    branch should only contain changes relating to that particular feature.
@@ -80,11 +91,11 @@ We use spaces for indentation. Do not use tabs in your code. You should set your
 editor to emit spaces when you hit the tab key.
 
 ## Naming Convention
-- Classes: PascalCase (e.g., MyClass)
-- Methods: PascalCase (e.g., MyMethod)
-- Variables: camelCase (e.g., myVariable)
-- Private Member Variables: _startingWithAUnderscore (e.g., _privateVariable)
-- Constants: UPPERCASE_WITH_UNDERSCORES (e.g., MAX_VALUE)
+- Classes: PascalCase (e.g., `MyClass`)
+- Methods: PascalCase (e.g., `MyMethod`)
+- Variables: camelCase (e.g.,`myVariable`)
+- Private Member Variables: _startingWithAUnderscore (e.g., `_privateVariable`)
+- Constants: UPPERCASE_WITH_UNDERSCORES (e.g.,`MAX_VALUE`)
 
 ## Braces
 Each Braces goes in a separate line, starting after the statement.
