@@ -69,10 +69,6 @@
                             <Setter Property="Content" Value="Connect"/>
                             <Setter Property="Visibility" Value="Collapsed"/>
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding Status}" Value="Connected">
-                                    <Setter Property="Content" Value="Raw Data"/>
-                                    <Setter Property="Visibility" Value="Visible"/>
-                                </DataTrigger>
                                 <DataTrigger Binding="{Binding Status}" Value="Disconnected">
                                     <Setter Property="Content" Value="Connect"/>
                                     <Setter Property="Visibility" Value="Visible"/>
