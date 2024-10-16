@@ -5,46 +5,6 @@
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="av" Width="538" Height="507">
 
-    <UserControl.Resources>
-        <!-- Modern Button Style with Rounded Corners, Hover Effect, and Shadows -->
-        <Style x:Key="ModernButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#0000" />
-            <Setter Property="Foreground" Value="White" />
-            <Setter Property="Padding" Value="15,7" />
-            <Setter Property="FontWeight" Value="Bold"/>
-            <Setter Property="BorderBrush" Value="#FFFF" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="FontSize" Value="14"/>
-            <Setter Property="Height" Value="60"/>
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border Background="{TemplateBinding Background}" 
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="20"
-                                SnapsToDevicePixels="True">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <!-- Hover Effect -->
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#808080"/>
-                                <Setter Property="BorderBrush" Value="#808080"/>
-                                <Setter Property="Cursor" Value="Hand"/>
-                            </Trigger>
-                            <!-- Pressed Effect -->
-                            <Trigger Property="IsPressed" Value="True">
-                                <Setter Property="Background" Value="#A9A9A9"/>
-                                <Setter Property="BorderBrush" Value="#A9A9A9"/>
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-    </UserControl.Resources>
-
     <Grid Margin="0,0,52,0">
         <!-- Row definitions for organizing the layout -->
         <Grid.RowDefinitions>

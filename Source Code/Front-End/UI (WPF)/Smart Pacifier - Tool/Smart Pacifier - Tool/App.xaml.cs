@@ -23,11 +23,11 @@ namespace Smart_Pacifier___Tool
             //Test testWindow = new Test(serviceFactory);
             //testWindow.Show();
             // Pass services to the windows
-            var algoTestWindow = new Temp.AlgoTest(algorithmService);
-            var testWindow = new Temp.Test(databaseService);
+            //var algoTestWindow = new Temp.AlgoTest(algorithmService);
+            //var testWindow = new Temp.Test(databaseService);
 
-            algoTestWindow.Show();
-            testWindow.Show();
+            //algoTestWindow.Show();
+            //testWindow.Show();
         }
 
         // Factory method to create an algorithm service
