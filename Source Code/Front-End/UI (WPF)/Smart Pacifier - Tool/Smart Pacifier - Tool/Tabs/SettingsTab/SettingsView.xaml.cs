@@ -5,25 +5,41 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
     public partial class SettingsView : UserControl
     {
-        private bool isUserMode = true;  // Default to User Mode
+        // Defining a constant key for storing the mode in the application properties
+        private const string UserModeKey = "UserMode";
 
         public SettingsView()
         {
             InitializeComponent();
-            UpdateButtonStates();  // Set default state when the tool opens
+
+            // Retrieving the persisted state when the view is loaded
+            if (Application.Current.Properties[UserModeKey] is bool userModeValue)
+            {
+                isUserMode = userModeValue;
+            }
+            else
+            {
+                isUserMode = true;  // Default to User Mode if no state was saved
+            }
+
+            UpdateButtonStates();  // Update button states when the tool opens
         }
+
+        private bool isUserMode = true;  // Default to User Mode
 
         private void UserMode_Click(object sender, RoutedEventArgs e)
         {
-            // Switch to User Mode
+            // Switch to User Mode and save the state
             isUserMode = true;
+            Application.Current.Properties[UserModeKey] = isUserMode;
             UpdateButtonStates();
         }
 
         private void DeveloperMode_Click(object sender, RoutedEventArgs e)
         {
-            // Switch to Developer Mode
+            // Switch to Developer Mode and save the state
             isUserMode = false;
+            Application.Current.Properties[UserModeKey] = isUserMode;
             UpdateButtonStates();
         }
 
