@@ -38,11 +38,4 @@ namespace Smart_Pacifier___Tool.Components
         public static readonly DependencyProperty StatusProperty =
             DependencyProperty.Register("Status", typeof(string), typeof(PacifierItem), new PropertyMetadata("Disconnected"));
     }
-
-    public class PacifierItemViewModel
-    {
-        public string DisplayName { get; set; } = string.Empty;
-        public ObservableCollection<KeyValuePair<string, int>> KeyValuePairs { get; set; } = new ObservableCollection<KeyValuePair<string, int>>();
-        public string Status { get; set; } = "Connected"; // Default status
-    }
 }

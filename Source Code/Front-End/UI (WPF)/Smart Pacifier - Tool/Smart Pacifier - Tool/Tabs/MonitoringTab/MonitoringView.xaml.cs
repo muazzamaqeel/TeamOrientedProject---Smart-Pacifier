@@ -13,11 +13,13 @@ namespace Smart_Pacifier___Tool.Tabs.MonitoringTab
             InitializeComponent();
             PacifierItems = new ObservableCollection<PacifierItemViewModel>();
 
+            // TODO Adjust the code when the real data source is available
+
             // Possible statuses
             string[] statuses = { "Connected", "Interrupted", "Disconnected", "Pending" };
             Random random = new Random();
 
-            // Use a loop to add items
+            // Use a loop to add items ( for demonstration purposes )
             for (int i = 1; i <= 15; i++)
             {
                 var keyValuePairs = new ObservableCollection<KeyValuePair<string, int>>
