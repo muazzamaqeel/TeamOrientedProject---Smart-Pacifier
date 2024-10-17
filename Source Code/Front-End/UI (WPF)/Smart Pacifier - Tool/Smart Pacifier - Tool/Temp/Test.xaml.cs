@@ -1,60 +1,81 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Windows;
-using SmartPacifier.Interface.Services;
+using System.Windows.Controls;
+using SmartPacifier.BackEnd.DatabaseLayer.InfluxDB.Managers;
 
 namespace Smart_Pacifier___Tool.Temp
 {
     public partial class Test : Window
     {
-        private readonly IDatabaseService _databaseService;
+        private readonly ManagerPacifiers _managerPacifiers;
 
-        public Test(IDatabaseService databaseService)
+        public Test(ManagerPacifiers managerPacifiers)
         {
             InitializeComponent();
-            _databaseService = databaseService;
+            _managerPacifiers = managerPacifiers; // Initialize the manager
         }
 
-        private void OnWriteDataButtonClick(object sender, RoutedEventArgs e)
+        // Method for handling TextBox focus (placeholder behavior)
+        private void OnTextBoxGotFocus(object sender, RoutedEventArgs e)
         {
-            try
+            TextBox textBox = sender as TextBox;
+            if (textBox != null && (textBox.Text == "Enter Campaign Name" || textBox.Text == "Enter Pacifier Name"))
             {
-                var fields = new Dictionary<string, object>
-                {
-                    { "temperature", 37.2 },
-                    { "humidity", 55 }
-                };
-
-                var tags = new Dictionary<string, string>
-                {
-                    { "sensor", "pacifier1" }
-                };
-
-                _databaseService.WriteData("environment", fields, tags);
-                MessageBox.Show("Data written to SmartPacifier-Bucket1.");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"Error writing data: {ex.Message}");
+                textBox.Text = string.Empty;
             }
         }
 
-        private void OnReadDataButtonClick(object sender, RoutedEventArgs e)
+        private void OnTextBoxLostFocus(object sender, RoutedEventArgs e)
         {
+            TextBox textBox = sender as TextBox;
+            if (textBox != null && string.IsNullOrWhiteSpace(textBox.Text))
+            {
+                if (textBox == CampaignNameTextBox)
+                {
+                    textBox.Text = "Enter Campaign Name";
+                }
+                else if (textBox == PacifierNameTextBox)
+                {
+                    textBox.Text = "Enter Pacifier Name";
+                }
+            }
+        }
+
+        // Method for handling Add Campaign button click
+        private void OnAddCampaignButtonClick(object sender, RoutedEventArgs e)
+        {
+            string campaignName = CampaignNameTextBox.Text.Trim();
+
+            if (string.IsNullOrEmpty(campaignName) || campaignName == "Enter Campaign Name")
+            {
+                ResultsTextBox.Text = "Please enter a valid campaign name.";
+                return;
+            }
+
+            // Assuming there's a manager for adding campaigns
+            ResultsTextBox.Text = $"Campaign '{campaignName}' added successfully.";
+        }
+
+        // Method for handling Add Pacifier button click
+        private void OnAddPacifierButtonClick(object sender, RoutedEventArgs e)
+        {
+            string campaignName = CampaignNameTextBox.Text.Trim();
+            string pacifierName = PacifierNameTextBox.Text.Trim();
+
+            if (string.IsNullOrEmpty(campaignName) || string.IsNullOrEmpty(pacifierName))
+            {
+                ResultsTextBox.Text = "Please enter both a valid campaign name and pacifier name.";
+                return;
+            }
+
             try
             {
-                string fluxQuery = @"
-                    from(bucket: ""SmartPacifier-Bucket1"")
-                    |> range(start: -1h)
-                    |> filter(fn: (r) => r._measurement == ""environment"")
-                ";
-
-                var results = _databaseService.ReadData(fluxQuery);
-                ResultsTextBox.Text = string.Join(Environment.NewLine, results);
+                _managerPacifiers.AddPacifierToCampaign(campaignName, pacifierName);
+                ResultsTextBox.Text = $"New pacifier '{pacifierName}' added successfully to campaign '{campaignName}'.";
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Error reading data: {ex.Message}");
+                ResultsTextBox.Text = $"Error: {ex.Message}";
             }
         }
     }

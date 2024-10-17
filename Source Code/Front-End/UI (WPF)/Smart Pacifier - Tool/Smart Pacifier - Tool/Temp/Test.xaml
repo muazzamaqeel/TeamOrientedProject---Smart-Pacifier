@@ -12,10 +12,18 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <!-- Button Section -->
+        <!-- Input Section for Campaign and Pacifier -->
         <StackPanel Orientation="Vertical" Grid.Row="0" HorizontalAlignment="Left" Margin="10,10,0,0">
-            <Button x:Name="WriteDataButton" Content="Write Data" Width="100" Height="30" Click="OnWriteDataButtonClick" />
-            <Button x:Name="ReadDataButton" Content="Read Data" Width="100" Height="30" Click="OnReadDataButtonClick" Margin="0,10,0,0" />
+
+            <!-- Campaign Name TextBox -->
+            <TextBox x:Name="CampaignNameTextBox" Width="200" Height="30" Text="Enter Campaign Name" GotFocus="OnTextBoxGotFocus" LostFocus="OnTextBoxLostFocus"/>
+
+            <!-- Pacifier Name TextBox -->
+            <TextBox x:Name="PacifierNameTextBox" Width="200" Height="30" Margin="0,10,0,0" Text="Enter Pacifier Name" GotFocus="OnTextBoxGotFocus" LostFocus="OnTextBoxLostFocus"/>
+
+            <!-- Buttons Section -->
+            <Button x:Name="AddCampaignButton" Content="Add Campaign" Width="100" Height="30" Margin="0,10,0,0" Click="OnAddCampaignButtonClick" />
+            <Button x:Name="AddPacifierButton" Content="Add Pacifier" Width="100" Height="30" Click="OnAddPacifierButtonClick" />
         </StackPanel>
 
         <!-- Output Section -->
