@@ -15,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\..\AlgorithmLayer\AlgorithmLayer\AlgorithmLayer\AlgorithmLayer.csproj" />
     <ProjectReference Include="..\..\..\..\Interface\Interface_NETInterop\Interface_NETInterop\Interface_NETInterop.csproj" />
   </ItemGroup>
 
