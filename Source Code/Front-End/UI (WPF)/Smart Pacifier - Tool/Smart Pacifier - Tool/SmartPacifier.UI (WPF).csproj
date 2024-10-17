@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\..\Back-End\BackEndService\BackEndService\SmartPacifier.BackEnd.csproj" />
     <ProjectReference Include="..\..\..\..\Interface\Interface_NETInterop\Interface_NETInterop\SmartPacifier.Interface.csproj" />
   </ItemGroup>
 
