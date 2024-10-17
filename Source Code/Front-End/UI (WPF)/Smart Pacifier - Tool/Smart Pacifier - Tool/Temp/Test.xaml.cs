@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows;
-using Interface_NETInterop;  // Reference to interface
+using SmartPacifier.Interface.Services;
 
 namespace Smart_Pacifier___Tool.Temp
 {
@@ -9,12 +9,10 @@ namespace Smart_Pacifier___Tool.Temp
     {
         private readonly IDatabaseService _databaseService;
 
-        public Test(IServiceFactory serviceFactory)
+        public Test(IDatabaseService databaseService)
         {
             InitializeComponent();
-
-            // Use the factory to create the database service
-            _databaseService = serviceFactory.CreateDatabaseService();
+            _databaseService = databaseService;
         }
 
         private void OnWriteDataButtonClick(object sender, RoutedEventArgs e)
@@ -54,7 +52,7 @@ namespace Smart_Pacifier___Tool.Temp
                 var results = _databaseService.ReadData(fluxQuery);
                 ResultsTextBox.Text = string.Join(Environment.NewLine, results);
             }
-            catch (UnauthorizedAccessException ex)
+            catch (Exception ex)
             {
                 MessageBox.Show($"Error reading data: {ex.Message}");
             }
