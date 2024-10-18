@@ -12,8 +12,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Back-End\BackEndService\BackEndService\BackEndService.csproj" />
-    <ProjectReference Include="..\..\..\Interface\Interface_NETInterop\Interface_NETInterop\Interface_NETInterop.csproj" />
+    <ProjectReference Include="..\..\..\Back-End\BackEndService\BackEndService\SmartPacifier.BackEnd.csproj" />
+    <ProjectReference Include="..\..\..\Interface\Interface_NETInterop\Interface_NETInterop\SmartPacifier.Interface.csproj" />
   </ItemGroup>
 
   <ItemGroup>
