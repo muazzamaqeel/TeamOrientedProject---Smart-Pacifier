@@ -5,22 +5,21 @@ using TestStack.White.UIItems; // For interacting with UI items
 using TestStack.White.UIItems.Finders; // For finding UI elements
 using TestStack.White.UIItems.WindowItems; // For window operations
 using TestStack.White.Factory; // For InitializeOption
+using System.IO;
 
 namespace SmartPacifier_UITests.FrontEnd.TestEnv_SmartPacifier.UI_WPF.Test_SettingsTab
 {
-    internal class Components_Settings
+    [Trait("Category", "SettingsTests")]
+    public class Components_Settings
     {
         [Fact]
         public void ButtonText_ShouldMatchExpectedValue()
         {
-            // Arrange: Set a relative path based on the current directory
-            var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
-
-            // Navigate to the location of the executable relative to the test project's bin folder
-            var applicationPath = System.IO.Path.Combine(baseDirectory, @"..\..\..\..\UI (WPF)\Smart Pacifier - Tool\bin\Debug\net5.0-windows\SmartPacifier.UI.exe");
+            // Use the absolute path to the SmartPacifier.UI.exe
+            var appPath = @"C:\programming\TeamOrientedProject---Smart-Pacifier\Source Code\Front-End\UI (WPF)\Smart Pacifier - Tool\bin\Debug\net5.0-windows\SmartPacifier.UI.exe";
 
             // Launch the SmartPacifier UI application
-            TestStack.White.Application app = TestStack.White.Application.Launch(applicationPath);
+            TestStack.White.Application app = TestStack.White.Application.Launch(appPath);
 
             // Find the main window of the application
             Window mainWindow = app.GetWindow("MainWindow", InitializeOption.NoCache);
