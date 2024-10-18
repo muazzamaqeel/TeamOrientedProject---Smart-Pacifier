@@ -39,4 +39,11 @@
         </Setter>
     </Style>
 
+
+    <Style x:Key="SmallModernButtonStyle" TargetType="Button" BasedOn="{StaticResource ModernButtonStyle}">
+        <Setter Property="Width" Value="100"/>
+        <Setter Property="Height" Value="35"/>
+    </Style>
+
+
 </ResourceDictionary>

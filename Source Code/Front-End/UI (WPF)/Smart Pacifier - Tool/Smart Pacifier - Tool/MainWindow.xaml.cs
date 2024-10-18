@@ -15,7 +15,6 @@ namespace Smart_Pacifier___Tool
         }
 
 
-
         public void NavigateTo(UserControl newView)
         {
             MainContent.Content = newView;

@@ -6,6 +6,11 @@
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
     <Grid>
-        <!-- Developer view content here -->
+        <!-- To be removed-->
+        <TextBlock Text="Welcome to the Developer View"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
+                   FontSize="24"
+                   FontWeight="Bold"/>
     </Grid>
 </UserControl>

@@ -19,7 +19,8 @@ namespace Smart_Pacifier___Tool
 
         public void UpdateDeveloperTabVisibility()
         {
-            if (Application.Current.Properties["DeveloperTabVisibleKey"] is bool isVisible && isVisible)
+            // Check if the Developer Tab should be visible
+            if (Application.Current.Properties[DeveloperTabVisibleKey] is bool isVisible && isVisible)
             {
                 DeveloperButton.Visibility = Visibility.Visible;
             }
