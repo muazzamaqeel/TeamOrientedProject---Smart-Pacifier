@@ -31,4 +31,11 @@
 		<Using Include="Xunit" />
 	</ItemGroup>
 
+	<ItemGroup>
+	  <Folder Include="BackEnd\" />
+	  <Folder Include="FrontEnd\TestEnv-SmartPacifier.UI %28WPF%29\Test_MonitoringTab\" />
+	  <Folder Include="FrontEnd\TestEnv-SmartPacifier.UI %28WPF%29\Test_DeveloperTab\" />
+	  <Folder Include="FrontEnd\TestEnv-SmartPacifier.UI %28WPF%29\Test_CampaignsTab\" />
+	</ItemGroup>
+
 </Project>
