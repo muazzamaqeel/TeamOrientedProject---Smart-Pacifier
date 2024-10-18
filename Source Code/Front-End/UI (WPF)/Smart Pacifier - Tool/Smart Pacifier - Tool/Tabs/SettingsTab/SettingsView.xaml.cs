@@ -28,14 +28,29 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 
         private bool isUserMode = true;
 
+        private void SwitchMode_Click(object sender, RoutedEventArgs e)
+        {
+            // Show User Mode and Developer Mode buttons
+            ModeButtonsPanel.Visibility = Visibility.Visible;
+            PinEntryPanel.Visibility = Visibility.Collapsed; // Ensure PIN entry is hidden
+        }
+
+        private void Theme_Click(object sender, RoutedEventArgs e)
+        {
+            // Hide User Mode and Developer Mode buttons when Theme is pressed
+            ModeButtonsPanel.Visibility = Visibility.Collapsed;
+        }
+
         private void UserMode_Click(object sender, RoutedEventArgs e)
         {
             // Switch to User Mode and hide the developer tab
             isUserMode = true;
             Application.Current.Properties[UserModeKey] = isUserMode;
-            Application.Current.Properties[DeveloperTabVisibleKey] = false; // Hide Developer mode
-
+            Application.Current.Properties[DeveloperTabVisibleKey] = false;
             UpdateButtonStates();
+
+            // Hide the PIN entry panel
+            PinEntryPanel.Visibility = Visibility.Collapsed;
 
             // Force the Sidebar to update its visibility
             ((MainWindow)Application.Current.MainWindow).UpdateDeveloperTabVisibility();
@@ -59,7 +74,7 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 UpdateButtonStates();
                 PinEntryPanel.Visibility = Visibility.Collapsed;
 
-                // Ensure that Sidebar is updated
+                // Optional: Force the Sidebar to update its visibility
                 ((MainWindow)Application.Current.MainWindow).UpdateDeveloperTabVisibility();
             }
             else
@@ -68,7 +83,6 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 PinInput.Clear();
             }
         }
-
 
         private void UpdateButtonStates()
         {
