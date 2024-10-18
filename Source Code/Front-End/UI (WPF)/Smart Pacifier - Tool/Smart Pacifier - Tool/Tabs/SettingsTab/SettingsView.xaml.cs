@@ -5,14 +5,15 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
 {
     public partial class SettingsView : UserControl
     {
-        // Defining a constant key for storing the mode in the application properties
         private const string UserModeKey = "UserMode";
+        private const string DeveloperTabVisibleKey = "DeveloperTabVisible";
+        private const string CorrectPin = "1234"; // Replace this with the actual PIN
 
         public SettingsView()
         {
             InitializeComponent();
 
-            // Retrieving the persisted state when the view is loaded
+            // Retrieve persisted state when the view is loaded
             if (Application.Current.Properties[UserModeKey] is bool userModeValue)
             {
                 isUserMode = userModeValue;
@@ -22,48 +23,64 @@ namespace Smart_Pacifier___Tool.Tabs.SettingsTab
                 isUserMode = true;  // Default to User Mode if no state was saved
             }
 
-            UpdateButtonStates();  // Update button states when the tool opens
+            UpdateButtonStates();
         }
 
-        private bool isUserMode = true;  // Default to User Mode
+        private bool isUserMode = true;
 
         private void UserMode_Click(object sender, RoutedEventArgs e)
         {
-            // Switch to User Mode and save the state
+            // Switch to User Mode and hide the developer tab
             isUserMode = true;
             Application.Current.Properties[UserModeKey] = isUserMode;
+            Application.Current.Properties[DeveloperTabVisibleKey] = false; // Hide Developer mode
+
             UpdateButtonStates();
+
+            // Force the Sidebar to update its visibility
+            ((MainWindow)Application.Current.MainWindow).UpdateDeveloperTabVisibility();
         }
+
 
         private void DeveloperMode_Click(object sender, RoutedEventArgs e)
         {
-            // Switch to Developer Mode and save the state
-            isUserMode = false;
-            Application.Current.Properties[UserModeKey] = isUserMode;
-            UpdateButtonStates();
+            // Display the PIN entry field when switching to Developer Mode
+            PinEntryPanel.Visibility = Visibility.Visible;
         }
+
+        private void PinSubmit_Click(object sender, RoutedEventArgs e)
+        {
+            // Verify the entered PIN
+            if (PinInput.Password == CorrectPin)
+            {
+                isUserMode = false;
+                Application.Current.Properties[UserModeKey] = isUserMode;
+                Application.Current.Properties[DeveloperTabVisibleKey] = true; // Set Developer mode visible
+                UpdateButtonStates();
+                PinEntryPanel.Visibility = Visibility.Collapsed;
+
+                // Ensure that Sidebar is updated
+                ((MainWindow)Application.Current.MainWindow).UpdateDeveloperTabVisibility();
+            }
+            else
+            {
+                MessageBox.Show("Incorrect PIN. Please try again.", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                PinInput.Clear();
+            }
+        }
+
 
         private void UpdateButtonStates()
         {
             if (isUserMode)
             {
-                // Show "Current Mode" under User Mode, hide under Developer Mode
                 UserModeStatus.Visibility = Visibility.Visible;
                 DeveloperModeStatus.Visibility = Visibility.Collapsed;
-
-                // Optionally, update text for clarity
-                UserModeText.Text = "User Mode";
-                DeveloperModeText.Text = "Developer Mode";
             }
             else
             {
-                // Show "Current Mode" under Developer Mode, hide under User Mode
                 UserModeStatus.Visibility = Visibility.Collapsed;
                 DeveloperModeStatus.Visibility = Visibility.Visible;
-
-                // Optionally, update text for clarity
-                UserModeText.Text = "User Mode";
-                DeveloperModeText.Text = "Developer Mode";
             }
         }
     }
