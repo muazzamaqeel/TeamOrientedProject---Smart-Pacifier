@@ -3,7 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35122.118
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SmartPacifier - UITests", "SmartPacifier - UITests\SmartPacifier - UITests.csproj", "{7FE7F8B9-471C-4C8A-8923-18AE35014829}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmartPacifier - UITests", "SmartPacifier - UITests\SmartPacifier - UITests.csproj", "{7FE7F8B9-471C-4C8A-8923-18AE35014829}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmartPacifier.UI (WPF)", "..\..\Source Code\Front-End\UI (WPF)\Smart Pacifier - Tool\Smart Pacifier - Tool\SmartPacifier.UI (WPF).csproj", "{99093CFF-F07E-4F50-BE34-3DF44EAB3A8B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{7FE7F8B9-471C-4C8A-8923-18AE35014829}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7FE7F8B9-471C-4C8A-8923-18AE35014829}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7FE7F8B9-471C-4C8A-8923-18AE35014829}.Release|Any CPU.Build.0 = Release|Any CPU
+		{99093CFF-F07E-4F50-BE34-3DF44EAB3A8B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{99093CFF-F07E-4F50-BE34-3DF44EAB3A8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{99093CFF-F07E-4F50-BE34-3DF44EAB3A8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{99093CFF-F07E-4F50-BE34-3DF44EAB3A8B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
