@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmartPacifier - UITests", "
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmartPacifier.UI (WPF)", "..\..\Source Code\Front-End\UI (WPF)\Smart Pacifier - Tool\Smart Pacifier - Tool\SmartPacifier.UI (WPF).csproj", "{99093CFF-F07E-4F50-BE34-3DF44EAB3A8B}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmartPacifier.BackEnd", "..\..\Source Code\Back-End\BackEndService\BackEndService\SmartPacifier.BackEnd.csproj", "{2E213FB1-9FFB-40D1-98DC-B35E8496012A}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SmartPacifier.Interface", "..\..\Source Code\Interface\Interface_NETInterop\Interface_NETInterop\SmartPacifier.Interface.csproj", "{7C4F8932-C218-416F-9B0D-C7EB33850622}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{99093CFF-F07E-4F50-BE34-3DF44EAB3A8B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{99093CFF-F07E-4F50-BE34-3DF44EAB3A8B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{99093CFF-F07E-4F50-BE34-3DF44EAB3A8B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2E213FB1-9FFB-40D1-98DC-B35E8496012A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2E213FB1-9FFB-40D1-98DC-B35E8496012A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2E213FB1-9FFB-40D1-98DC-B35E8496012A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2E213FB1-9FFB-40D1-98DC-B35E8496012A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7C4F8932-C218-416F-9B0D-C7EB33850622}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7C4F8932-C218-416F-9B0D-C7EB33850622}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7C4F8932-C218-416F-9B0D-C7EB33850622}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7C4F8932-C218-416F-9B0D-C7EB33850622}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
