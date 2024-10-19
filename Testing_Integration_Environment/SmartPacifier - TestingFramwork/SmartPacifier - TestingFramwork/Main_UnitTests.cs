@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SmartPacifier___UITests
+namespace SmartPacifier___TestingFramework
 {
     internal class Main_UnitTests
     {

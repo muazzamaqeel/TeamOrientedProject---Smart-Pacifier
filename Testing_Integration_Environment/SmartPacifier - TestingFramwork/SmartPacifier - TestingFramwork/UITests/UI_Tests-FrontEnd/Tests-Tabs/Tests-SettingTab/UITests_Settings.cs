@@ -1,9 +1,9 @@
 ﻿using FlaUI.Core;
 using FlaUI.UIA3;
 using Xunit;
-using SmartPacifier___UITests.UITests.Templates; // Importing the Buttons class
+using SmartPacifier___TestingFramework.UITests.Templates; // Importing the Buttons class
 
-namespace SmartPacifier___UITests.Tests_FrontEnd.Tests_Tabs.Tests_SettingTab
+namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_SettingTab
 {
     public class UITests_Settings
     {
