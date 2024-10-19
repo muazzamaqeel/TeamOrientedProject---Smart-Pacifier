@@ -1,7 +1,7 @@
 ﻿using FlaUI.Core;
 using FlaUI.UIA3;
 using Xunit;
-using SmartPacifier___TestingFramework.UITests.Templates; // Importing the Buttons class
+using SmartPacifier___TestingFramework.UITests.UI_Templates;//Importing the Text Boxes class
 
 namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_SettingTab
 {
@@ -38,6 +38,34 @@ namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_Setti
                     Assert.NotNull(themeButton);
                     Assert.NotNull(userModeButton);
                     Assert.NotNull(developerModeButton);
+                }
+            }
+            finally
+            {
+                // Note: Don't close the app here; it will be closed by Main_TestSuite
+            }
+        }
+
+
+        public void CheckTextBoxesExistenceInSettingsTab()
+        {
+            try
+            {
+                using (var automation = new UIA3Automation())
+                {
+                    Thread.Sleep(3000); // Ensure the UI is loaded properly
+                    var mainWindow = app.GetMainWindow(automation);
+
+                    var textBoxHelper = new Text_Boxes(); // Instance of the Text_Boxes class
+
+                    // Check for the existence of text boxes in the Settings tab
+                    var settingTextBox1 = textBoxHelper.FindTextBoxByName(mainWindow, "DeveloperModeText");
+
+                    // Assert that each text box exists
+                    Assert.NotNull(settingTextBox1);
+
+                    // Observe the behavior of the text boxes
+                    textBoxHelper.ObserveTextBoxBehavior(settingTextBox1);
                 }
             }
             finally

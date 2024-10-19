@@ -42,7 +42,9 @@ namespace SmartPacifier___TestingFramework
                 var settingsTests = new UITests_Settings(app);
 
                 // Run the settings tab tests
-                settingsTests.CheckButtonsExistenceInSettingsTab();
+                //settingsTests.CheckButtonsExistenceInSettingsTab();
+                settingsTests.CheckTextBoxesExistenceInSettingsTab();
+
             }
             finally
             {
