@@ -14,8 +14,8 @@ namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_Setti
         {
             this.app = app;
         }
-   
 
+                    ////////******************************BUTTONS************************/////////////
         public void CheckButtonsExistenceInSettingsTab()
         {
             try
@@ -46,7 +46,7 @@ namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_Setti
             }
         }
 
-
+                    ////////****************************** TEXT BOXES ************************/////////////
         public void CheckTextBoxesExistenceInSettingsTab()
         {
             try
@@ -73,7 +73,7 @@ namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_Setti
                 // Note: Don't close the app here; it will be closed by Main_TestSuite
             }
         }
-
+                     ////////****************************** TEXT BLOCKS ************************/////////////
         public void CheckTextBlocksExistenceAndBehaviorInSettingsTab()
         {
             try
@@ -110,5 +110,39 @@ namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_Setti
                 // Note: Don't close the app here; it will be closed by Main_TestSuite
             }
         }
+                      ////////****************************** CHECK BOXES ************************/////////////
+        public void CheckCheckBoxesExistenceInSettingsTab()
+        {
+            try
+            {
+                using (var automation = new UIA3Automation())
+                {
+                    Thread.Sleep(3000); // Ensure the UI is loaded properly
+                    var mainWindow = app.GetMainWindow(automation);
+
+                    var checkBoxHelper = new Check_boxes(); // Instance of the Check_boxes class
+
+                    // Check for the existence of checkboxes in the Settings tab
+                    var enableLoggingCheckBox = checkBoxHelper.FindCheckBoxByName(mainWindow, "EnableLoggingCheckBox");
+                    var enableNotificationsCheckBox = checkBoxHelper.FindCheckBoxByName(mainWindow, "EnableNotificationsCheckBox");
+
+                    // Assert that each checkbox exists
+                    Assert.NotNull(enableLoggingCheckBox);
+                    Assert.NotNull(enableNotificationsCheckBox);
+
+                    // Observe the behavior of the checkboxes
+                    checkBoxHelper.ObserveCheckBoxBehavior(enableLoggingCheckBox);
+                    checkBoxHelper.ObserveCheckBoxBehavior(enableNotificationsCheckBox);
+                }
+            }
+            finally
+            {
+                // Note: Don't close the app here; it will be closed by Main_TestSuite
+            }
+        }
+
+
+
+
     }
 }
