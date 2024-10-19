@@ -43,7 +43,7 @@ namespace SmartPacifier___TestingFramework
 
                 // Run the settings tab tests
                 //settingsTests.CheckButtonsExistenceInSettingsTab();
-                settingsTests.CheckTextBoxesExistenceInSettingsTab();
+                settingsTests.CheckTextBlocksExistenceAndBehaviorInSettingsTab();
 
             }
             finally

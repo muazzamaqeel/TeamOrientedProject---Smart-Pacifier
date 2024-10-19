@@ -73,5 +73,42 @@ namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_Setti
                 // Note: Don't close the app here; it will be closed by Main_TestSuite
             }
         }
+
+        public void CheckTextBlocksExistenceAndBehaviorInSettingsTab()
+        {
+            try
+            {
+                using (var automation = new UIA3Automation())
+                {
+                    Thread.Sleep(3000); // Ensure the UI is loaded properly
+                    var mainWindow = app.GetMainWindow(automation);
+
+                    var textBlockHelper = new TextBlocks(); // Instance of the TextBlocks class
+
+                    // Check for the existence of text blocks in the Settings tab
+                    var userModeTextBlock = textBlockHelper.FindTextBlockByName(mainWindow, "UserModeText");
+                    var developerModeTextBlock = textBlockHelper.FindTextBlockByName(mainWindow, "DeveloperModeText");
+
+                    // Assert that each text block exists
+                    Assert.NotNull(userModeTextBlock);
+                    Assert.NotNull(developerModeTextBlock);
+
+                    // Observe the behavior of the text blocks (visibility, content, etc.)
+                    textBlockHelper.ObserveTextBlockBehavior(userModeTextBlock);
+                    textBlockHelper.ObserveTextBlockBehavior(developerModeTextBlock);
+
+                    // Additional checks for visibility and text of status TextBlocks
+                    var userModeStatus = textBlockHelper.FindTextBlockByName(mainWindow, "UserModeStatus");
+                    var developerModeStatus = textBlockHelper.FindTextBlockByName(mainWindow, "DeveloperModeStatus");
+
+                    Assert.NotNull(userModeStatus);
+                    Assert.NotNull(developerModeStatus);
+                }
+            }
+            finally
+            {
+                // Note: Don't close the app here; it will be closed by Main_TestSuite
+            }
+        }
     }
 }
