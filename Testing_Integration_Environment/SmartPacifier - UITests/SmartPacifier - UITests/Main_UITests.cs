@@ -7,7 +7,7 @@ using SmartPacifier___UITests.Tests_FrontEnd.Tests_Tabs.Tests_SettingTab;
 
 namespace SmartPacifier___UITests
 {
-    public class Main_TestSuite
+    public class Main_UITests
     {
         private Application? app;
 

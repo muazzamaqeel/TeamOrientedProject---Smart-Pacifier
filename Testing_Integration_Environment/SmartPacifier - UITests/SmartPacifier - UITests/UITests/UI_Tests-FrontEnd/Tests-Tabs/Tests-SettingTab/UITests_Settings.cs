@@ -1,7 +1,7 @@
 ﻿using FlaUI.Core;
 using FlaUI.UIA3;
 using Xunit;
-using SmartPacifier___UITests.Templates; // Importing the Buttons class
+using SmartPacifier___UITests.UITests.Templates; // Importing the Buttons class
 
 namespace SmartPacifier___UITests.Tests_FrontEnd.Tests_Tabs.Tests_SettingTab
 {
@@ -14,6 +14,7 @@ namespace SmartPacifier___UITests.Tests_FrontEnd.Tests_Tabs.Tests_SettingTab
         {
             this.app = app;
         }
+   
 
         public void CheckButtonsExistenceInSettingsTab()
         {

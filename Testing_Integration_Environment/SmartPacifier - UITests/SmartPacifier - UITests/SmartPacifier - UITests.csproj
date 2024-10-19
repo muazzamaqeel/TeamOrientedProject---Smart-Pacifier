@@ -35,7 +35,10 @@
 	</ItemGroup>
 
 	<ItemGroup>
-	  <Folder Include="Tests-BackEnd\" />
+	  <Folder Include="UITests\UI_Tests-BackEnd\" />
+	  <Folder Include="UnitTests\Unit_Templates\" />
+	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\" />
+	  <Folder Include="UnitTests\Unit_Tests_BackEnd\" />
 	</ItemGroup>
 
 </Project>
