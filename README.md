@@ -40,9 +40,9 @@ Emma and Moosbauer, Sebastian.
 - InfluxDB
 
 Installing MQTTnet via nuget:
-`
+```
 Install-Package MQTTnet
-`
+```
 
 # Documentation
 For Documentation see: [Documentation](/Documentation)
@@ -52,7 +52,7 @@ We have 4 individual projects:
 - Smart Pacifier: The Frontent Project
 - BackEndService: Providing access to Sensor data, DataBase & MQTT
   Protocoll
-- AlogirthmLayer: Providing the capabilities for implementing
+- AlgorithmLayer: Providing the capabilities for implementing
   Algorithms
 - Interface: Providing the Interfaces to the FrontEnd/AlogrithmLayer
 
