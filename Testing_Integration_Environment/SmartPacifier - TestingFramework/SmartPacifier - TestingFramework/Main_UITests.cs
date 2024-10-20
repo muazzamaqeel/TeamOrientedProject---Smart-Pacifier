@@ -4,6 +4,7 @@ using FlaUI.Core;
 using FlaUI.UIA3;
 using Xunit;
 using SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_SettingTab;
+using SmartPacifier_UITests;
 
 namespace SmartPacifier___TestingFramework
 {
@@ -42,6 +43,27 @@ namespace SmartPacifier___TestingFramework
                 Assert.True(settingsTests.CheckButtonsExistenceInSettingsTab(), "Buttons existence test failed.");
                 Assert.True(settingsTests.CheckTextBlocksExistenceAndBehaviorInSettingsTab(), "Text blocks existence and behavior test failed.");
                 Assert.True(settingsTests.CheckCheckBoxesExistenceInSettingsTab(), "Check boxes existence test failed.");
+            }
+            finally
+            {
+                app.Close();
+            }
+        }
+
+
+
+        /// <summary>
+        /// Runs the PIN validation tests for the Developer tab.
+        /// </summary>
+        [Fact]
+        public void RunPinValidationTests()
+        {
+            app = LaunchApplication();
+            try
+            {
+                // Pass the launched application to the PinValidationTests class
+                var pinValidationTests = new PINValidationTests(app);
+                pinValidationTests.ValidateDeveloperTabActivation_WithCorrectPin();  // Call the function
             }
             finally
             {
