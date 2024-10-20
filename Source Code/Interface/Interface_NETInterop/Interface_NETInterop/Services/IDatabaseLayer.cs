@@ -2,7 +2,7 @@
 {
     public interface IDatabaseService
     {
-        void WriteData(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags);
+        Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags); // Updated to Task
         List<string> ReadData(string query);
     }
 }
