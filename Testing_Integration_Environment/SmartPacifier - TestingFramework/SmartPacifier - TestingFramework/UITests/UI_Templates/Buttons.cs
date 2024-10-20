@@ -10,7 +10,7 @@ using FlaUI.Core.Definitions;
 using Xunit;
 using System.Diagnostics;
 
-namespace SmartPacifier___TestingFramework.UITests.Templates
+namespace SmartPacifier___TestingFramework.UITests.UI_Templates
 {
     public class Buttons
     {
