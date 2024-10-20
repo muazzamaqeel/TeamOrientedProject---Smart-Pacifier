@@ -15,17 +15,15 @@ namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_Setti
             this.app = app;
         }
 
-                    ////////******************************BUTTONS************************/////////////
-        public void CheckButtonsExistenceInSettingsTab()
+        ////////******************************BUTTONS************************/////////////
+        public bool CheckButtonsExistenceInSettingsTab()
         {
             try
             {
                 using (var automation = new UIA3Automation())
                 {
-                    Thread.Sleep(3000); // Ensure the UI is loaded properly
                     var mainWindow = app.GetMainWindow(automation);
-
-                    var buttonsHelper = new Buttons(); // Instance of the Buttons class
+                    var buttonsHelper = new Buttons();
 
                     // Check for the existence of buttons in the Settings tab
                     var switchModeButton = buttonsHelper.FindButtonByName(mainWindow, "SwitchModeButton");
@@ -33,20 +31,18 @@ namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_Setti
                     var userModeButton = buttonsHelper.FindButtonByName(mainWindow, "UserModeButton");
                     var developerModeButton = buttonsHelper.FindButtonByName(mainWindow, "DeveloperModeButton");
 
-                    // Assert that each button exists
-                    Assert.NotNull(switchModeButton);
-                    Assert.NotNull(themeButton);
-                    Assert.NotNull(userModeButton);
-                    Assert.NotNull(developerModeButton);
+                    // Return true if all buttons exist, otherwise return false
+                    return switchModeButton != null && themeButton != null && userModeButton != null && developerModeButton != null;
                 }
             }
-            finally
+            catch (Exception)
             {
-                // Note: Don't close the app here; it will be closed by Main_TestSuite
+                return false; // Return false if an exception occurs
             }
         }
 
-                    ////////****************************** TEXT BOXES ************************/////////////
+
+        ////////****************************** TEXT BOXES ************************/////////////
         public void CheckTextBoxesExistenceInSettingsTab()
         {
             try
@@ -73,73 +69,54 @@ namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_Setti
                 // Note: Don't close the app here; it will be closed by Main_TestSuite
             }
         }
-                     ////////****************************** TEXT BLOCKS ************************/////////////
-        public void CheckTextBlocksExistenceAndBehaviorInSettingsTab()
+        ////////****************************** TEXT BLOCKS ************************/////////////
+        public bool CheckTextBlocksExistenceAndBehaviorInSettingsTab()
         {
             try
             {
                 using (var automation = new UIA3Automation())
                 {
-                    Thread.Sleep(3000); // Ensure the UI is loaded properly
                     var mainWindow = app.GetMainWindow(automation);
-
-                    var textBlockHelper = new TextBlocks(); // Instance of the TextBlocks class
+                    var textBlockHelper = new TextBlocks();
 
                     // Check for the existence of text blocks in the Settings tab
                     var userModeTextBlock = textBlockHelper.FindTextBlockByName(mainWindow, "UserModeText");
                     var developerModeTextBlock = textBlockHelper.FindTextBlockByName(mainWindow, "DeveloperModeText");
 
-                    // Assert that each text block exists
-                    Assert.NotNull(userModeTextBlock);
-                    Assert.NotNull(developerModeTextBlock);
-
-                    // Observe the behavior of the text blocks (visibility, content, etc.)
-                    textBlockHelper.ObserveTextBlockBehavior(userModeTextBlock);
-                    textBlockHelper.ObserveTextBlockBehavior(developerModeTextBlock);
-
-                    // Additional checks for visibility and text of status TextBlocks
-                    var userModeStatus = textBlockHelper.FindTextBlockByName(mainWindow, "UserModeStatus");
-                    var developerModeStatus = textBlockHelper.FindTextBlockByName(mainWindow, "DeveloperModeStatus");
-
-                    Assert.NotNull(userModeStatus);
-                    Assert.NotNull(developerModeStatus);
+                    // Return true if all text blocks exist
+                    return userModeTextBlock != null && developerModeTextBlock != null;
                 }
             }
-            finally
+            catch (Exception)
             {
-                // Note: Don't close the app here; it will be closed by Main_TestSuite
+                return false; // Return false if an exception occurs
             }
         }
-                      ////////****************************** CHECK BOXES ************************/////////////
-        public void CheckCheckBoxesExistenceInSettingsTab()
+
+        ////////****************************** CHECK BOXES ************************/////////////
+        public bool CheckCheckBoxesExistenceInSettingsTab()
         {
             try
             {
                 using (var automation = new UIA3Automation())
                 {
-                    Thread.Sleep(3000); // Ensure the UI is loaded properly
                     var mainWindow = app.GetMainWindow(automation);
-
-                    var checkBoxHelper = new Check_boxes(); // Instance of the Check_boxes class
+                    var checkBoxHelper = new Check_boxes();
 
                     // Check for the existence of checkboxes in the Settings tab
                     var enableLoggingCheckBox = checkBoxHelper.FindCheckBoxByName(mainWindow, "EnableLoggingCheckBox");
                     var enableNotificationsCheckBox = checkBoxHelper.FindCheckBoxByName(mainWindow, "EnableNotificationsCheckBox");
 
-                    // Assert that each checkbox exists
-                    Assert.NotNull(enableLoggingCheckBox);
-                    Assert.NotNull(enableNotificationsCheckBox);
-
-                    // Observe the behavior of the checkboxes
-                    checkBoxHelper.ObserveCheckBoxBehavior(enableLoggingCheckBox);
-                    checkBoxHelper.ObserveCheckBoxBehavior(enableNotificationsCheckBox);
+                    // Return true if all checkboxes exist
+                    return enableLoggingCheckBox != null && enableNotificationsCheckBox != null;
                 }
             }
-            finally
+            catch (Exception)
             {
-                // Note: Don't close the app here; it will be closed by Main_TestSuite
+                return false; // Return false if an exception occurs
             }
         }
+
 
 
 

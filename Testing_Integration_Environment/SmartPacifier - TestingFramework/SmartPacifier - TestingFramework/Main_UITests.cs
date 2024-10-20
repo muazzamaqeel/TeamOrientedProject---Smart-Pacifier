@@ -33,25 +33,22 @@ namespace SmartPacifier___TestingFramework
         [Fact]
         public void RunSettingsTabTests()
         {
-            // Launch the application once here
             app = LaunchApplication();
-
             try
             {
-                // Pass the launched application to UITests_Settings
                 var settingsTests = new UITests_Settings(app);
 
-                // Run the settings tab tests
-                //settingsTests.CheckButtonsExistenceInSettingsTab();
-               // settingsTests.CheckTextBlocksExistenceAndBehaviorInSettingsTab();
-             
-
+                // Assert each function returns true
+                Assert.True(settingsTests.CheckButtonsExistenceInSettingsTab(), "Buttons existence test failed.");
+                Assert.True(settingsTests.CheckTextBlocksExistenceAndBehaviorInSettingsTab(), "Text blocks existence and behavior test failed.");
+                Assert.True(settingsTests.CheckCheckBoxesExistenceInSettingsTab(), "Check boxes existence test failed.");
             }
             finally
             {
-                // Close the application after running tests
                 app.Close();
             }
         }
+
+
     }
 }
