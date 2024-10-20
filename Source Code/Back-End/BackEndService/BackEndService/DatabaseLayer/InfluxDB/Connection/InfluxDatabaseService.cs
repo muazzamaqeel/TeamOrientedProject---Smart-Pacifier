@@ -41,6 +41,12 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             return _instance;
         }
 
+        // Expose InfluxDBClient so other classes can use it
+        public InfluxDBClient GetClient()
+        {
+            return _client;
+        }
+
         public async Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
         {
             try
@@ -78,13 +84,49 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             }
         }
 
-
-
         public List<string> ReadData(string query)
         {
             var results = new List<string>();
             // Implementation of data reading logic goes here.
             return results;
+        }
+
+        // WriteDataAsync method stays the same as before
+
+        public async Task<List<string>> GetCampaignsAsync()
+        {
+            var campaigns = new List<string>();
+            try
+            {
+                var fluxQuery = $"from(bucket: \"{_bucket}\") " +
+                                "|> range(start: -30d) " +  // Adjust the time range if needed
+                                "|> keep(columns: [\"campaign_name\"]) " +
+                                "|> distinct(column: \"campaign_name\")";
+
+                // Use _client.GetQueryApi() to access the query API
+                var queryApi = _client.GetQueryApi();
+                var tables = await queryApi.QueryAsync(fluxQuery, _org);
+
+                Console.WriteLine("Query executed, parsing results...");
+                foreach (var table in tables)
+                {
+                    foreach (var record in table.Records)
+                    {
+                        var campaignName = record.GetValueByKey("campaign_name")?.ToString();
+                        if (!string.IsNullOrEmpty(campaignName))
+                        {
+                            Console.WriteLine($"Found campaign: {campaignName}");
+                            campaigns.Add(campaignName);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving campaigns: {ex.Message}");
+            }
+
+            return campaigns;
         }
     }
 }
