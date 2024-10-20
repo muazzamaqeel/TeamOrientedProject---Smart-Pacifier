@@ -33,9 +33,16 @@ Emma and Moosbauer, Sebastian.
 
 # Installation
 *TODO*
-
 # Setup
+## Requirements
+- Mosquitto
+- MQTTnet
+- InfluxDB
 
+Installing MQTTnet via nuget:
+`
+Install-Package MQTTnet
+`
 
 # Documentation
 For Documentation see: [Documentation](/Documentation)
