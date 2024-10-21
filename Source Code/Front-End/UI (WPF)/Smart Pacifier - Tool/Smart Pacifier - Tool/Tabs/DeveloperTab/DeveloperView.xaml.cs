@@ -8,8 +8,8 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 {
     public partial class DeveloperView : UserControl
     {
-        private List<SensorData> allData = new List<SensorData>();  
-        private List<SensorData> currentPageData = new List<SensorData>();  
+        private List<SensorData> allData = new List<SensorData>();
+        private List<SensorData> currentPageData = new List<SensorData>();
         private int currentPage = 1;
         private int pageSize = 10;
 
@@ -28,8 +28,6 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_1", Pacifier = "pacifier_1", Sensor = "sensor_1", Value = 36.5 },
                 new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_3", Pacifier = "pacifier_1", Sensor = "sensor_1", Value = 311.5 },
                 new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_2", Pacifier = "pacifier_2", Sensor = "sensor_1", Value = 36.5 },
-
-
             };
         }
 
@@ -84,6 +82,27 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             }
         }
 
+        // Add button click
+        private void AddButton_Click(object sender, RoutedEventArgs e)
+        {
+            // Implement the popup for Add action here
+            // Add logic to add a new entry and refresh the list
+        }
+
+        // Edit button click
+        private void EditButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (DataListView.SelectedItems.Count == 1)
+            {
+                // Implement the popup for Edit action here
+                // Add logic to edit the selected entry and refresh the list
+            }
+            else
+            {
+                MessageBox.Show("Please select one entry to edit.");
+            }
+        }
+
         // Handling placeholder-like behavior for ComboBox
         private void ComboBox_Loaded(object sender, RoutedEventArgs e)
         {
@@ -104,10 +123,10 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
     // Example data model for sensor data
     public class SensorData
     {
-        public string Timestamp { get; set; } = string.Empty;  
-        public string Campaign { get; set; } = string.Empty;  
-        public string Pacifier { get; set; } = string.Empty;  
-        public string Sensor { get; set; } = string.Empty;  
+        public string Timestamp { get; set; } = string.Empty;
+        public string Campaign { get; set; } = string.Empty;
+        public string Pacifier { get; set; } = string.Empty;
+        public string Sensor { get; set; } = string.Empty;
         public double Value { get; set; }
     }
 }
