@@ -3,7 +3,7 @@ using FlaUI.UIA3;
 using Xunit;
 using SmartPacifier___TestingFramework.UITests.UI_Templates;//Importing the Text Boxes class
 
-namespace SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_SettingTab
+namespace SmartPacifier___TestingFramework.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Tests_SettingsTab
 {
     public class UITests_Settings
     {

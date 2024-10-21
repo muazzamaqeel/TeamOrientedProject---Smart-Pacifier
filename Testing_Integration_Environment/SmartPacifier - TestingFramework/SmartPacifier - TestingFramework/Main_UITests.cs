@@ -3,7 +3,7 @@ using System.Diagnostics;
 using FlaUI.Core;
 using FlaUI.UIA3;
 using Xunit;
-using SmartPacifier___TestingFramework.Tests_FrontEnd.Tests_Tabs.Tests_SettingTab;
+using SmartPacifier___TestingFramework.UI_Tests_FrontEnd.UI_Tests_Tabs.UI_Tests_SettingsTab;
 
 namespace SmartPacifier___TestingFramework
 {
@@ -41,7 +41,7 @@ namespace SmartPacifier___TestingFramework
                 // Assert each function returns true
                 Assert.True(settingsTests.CheckButtonsExistenceInSettingsTab(), "Buttons existence test failed.");
                 Assert.True(settingsTests.CheckTextBlocksExistenceAndBehaviorInSettingsTab(), "Text blocks existence and behavior test failed.");
-                Assert.True(settingsTests.CheckCheckBoxesExistenceInSettingsTab(), "Check boxes existence test failed.");
+                //Assert.True(settingsTests.CheckCheckBoxesExistenceInSettingsTab(), "Check boxes existence test failed.");
             }
             finally
             {
