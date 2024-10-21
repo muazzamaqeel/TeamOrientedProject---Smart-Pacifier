@@ -9,14 +9,13 @@
         <DataGrid x:Name="dataGrid" AutoGenerateColumns="True" ItemsSource="{Binding ItemsSource, RelativeSource={RelativeSource AncestorType=UserControl}}"
                   Background="{StaticResource MainViewBackgroundColor}" 
                   RowBackground="#333333"
-                  BorderBrush="{StaticResource MainViewBackgroundColor}" 
                   BorderThickness="0"
                   HeadersVisibility="Column">
             <DataGrid.Resources>
                 <!-- Style for DataGrid Headers -->
                 <Style TargetType="DataGridColumnHeader">
                     <Setter Property="Background" Value="{StaticResource MainViewBackgroundColor}" />
-                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="Foreground" Value="{StaticResource MainViewForegroundColor}" />
                     <Setter Property="FontSize" Value="18" />
                     <Setter Property="HorizontalContentAlignment" Value="Center" />
                     <Setter Property="VerticalContentAlignment" Value="Center" />
@@ -29,7 +28,7 @@
                                 <Grid Background="{TemplateBinding Background}">
                                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
                                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="5,1"/>
-                                        <Path x:Name="SortArrow" Data="M 0 0 L 4 4 L 8 0 Z" Fill="White" Width="8" Height="4" Margin="5,0,0,0" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5"/>
+                                        <Path x:Name="SortArrow" Data="M 0 0 L 4 4 L 8 0 Z" Fill="{StaticResource MainViewForegroundColor}" Width="8" Height="4" Margin="5,0,0,0" Visibility="Collapsed" RenderTransformOrigin="0.5,0.5"/>
                                     </StackPanel>
                                 </Grid>
                                 <ControlTemplate.Triggers>
@@ -75,7 +74,7 @@
                 <Style TargetType="DataGridCell">
                     <Setter Property="Background" Value="#333333" />
                     <!-- Dark gray -->
-                    <Setter Property="Foreground" Value="White" />
+                    <Setter Property="Foreground" Value="{StaticResource MainViewForegroundColor}" />
                     <Setter Property="FontSize" Value="14" />
                     <Setter Property="BorderBrush" Value="{StaticResource MainViewBackgroundColor}" />
                     <Setter Property="BorderThickness" Value="0" />
