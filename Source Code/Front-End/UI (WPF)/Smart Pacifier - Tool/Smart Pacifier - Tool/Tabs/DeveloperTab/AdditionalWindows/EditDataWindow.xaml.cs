@@ -4,10 +4,10 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 {
     public partial class EditDataWindow : Window
     {
-        public string Timestamp { get; private set; }
-        public string Pacifier { get; private set; }
-        public string Campaign { get; private set; }
-        public string Sensor { get; private set; }
+        public string Timestamp { get; private set; } = string.Empty;  // Initialize with an empty string
+        public string Pacifier { get; private set; } = string.Empty;
+        public string Campaign { get; private set; } = string.Empty;
+        public string Sensor { get; private set; } = string.Empty;
         public double Value { get; private set; }
 
         public EditDataWindow(SensorData data)
@@ -21,6 +21,7 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             SensorTextBox.Text = data.Sensor;
             ValueTextBox.Text = data.Value.ToString();
         }
+
 
         private void SaveButton_Click(object sender, RoutedEventArgs e)
         {

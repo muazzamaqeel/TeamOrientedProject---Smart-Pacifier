@@ -69,34 +69,34 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         }
 
         // Delete selected entries with null check
-        private void DeleteButton_Click(object sender, RoutedEventArgs e)
+private void DeleteButton_Click(object sender, RoutedEventArgs e)
+{
+    var selectedItems = DataListView.SelectedItems?.Cast<SensorData>().ToList();
+    
+    if (selectedItems != null && selectedItems.Count > 0)
+    {
+        // Show confirmation dialog
+        MessageBoxResult result = MessageBox.Show("Are you sure you want to delete the selected data?", 
+                                                  "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+        // If the user confirms deletion
+        if (result == MessageBoxResult.Yes)
         {
-            var selectedItems = DataListView.SelectedItems?.Cast<SensorData>().ToList();
-
-            if (selectedItems != null && selectedItems.Count > 0)
+            foreach (var item in selectedItems)
             {
-                // Show confirmation dialog
-                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete the selected data?",
-                                                          "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-                // If the user confirms deletion
-                if (result == MessageBoxResult.Yes)
-                {
-                    foreach (var item in selectedItems)
-                    {
-                        allData?.Remove(item);
-                    }
-
-                    // Refresh the display
-                    DisplayData();
-                }
-                // If Cancel is chosen, do nothing.
+                allData?.Remove(item);
             }
-            else
-            {
-                MessageBox.Show("Please select at least one entry to delete.");
-            }
+
+            // Refresh the display
+            DisplayData();
         }
+        // If Cancel is chosen, do nothing.
+    }
+    else
+    {
+        MessageBox.Show("Please select at least one entry to delete.");
+    }
+}
 
 
         // Add button click
@@ -153,25 +153,32 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
                 MessageBox.Show("Please select one entry to edit.");
             }
         }
-
-
         // Handling placeholder-like behavior for ComboBox
         private void ComboBox_Loaded(object sender, RoutedEventArgs e)
         {
             var comboBox = sender as ComboBox;
-            comboBox.SelectedIndex = -1;
-        }
 
+            // Check if comboBox is not null
+            if (comboBox != null)
+            {
+                comboBox.SelectedIndex = -1;
+            }
+        }
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var comboBox = sender as ComboBox;
-            if (comboBox.SelectedItem == null)
+
+            // Check if comboBox is not null
+            if (comboBox != null)
             {
-                comboBox.SelectedIndex = -1; // Reset selection if nothing is chosen
+                if (comboBox.SelectedItem == null)
+                {
+                    comboBox.SelectedIndex = -1; // Reset selection if nothing is chosen
+                }
             }
         }
-    }
 
+    }   
     // Example data model for sensor data
     public class SensorData
     {
