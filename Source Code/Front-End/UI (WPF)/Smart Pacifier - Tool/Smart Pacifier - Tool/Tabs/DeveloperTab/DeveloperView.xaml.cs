@@ -8,8 +8,8 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
 {
     public partial class DeveloperView : UserControl
     {
-        private List<SensorData> allData = new List<SensorData>();  // Initialize to avoid CS8618
-        private List<SensorData> currentPageData = new List<SensorData>();  // Initialize to avoid CS8618
+        private List<SensorData> allData = new List<SensorData>();  
+        private List<SensorData> currentPageData = new List<SensorData>();  
         private int currentPage = 1;
         private int pageSize = 10;
 
@@ -20,14 +20,12 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             DisplayData();
         }
 
-        // Load data into allData (normally this would be from your database)
+        // Load data into allData
         private void LoadData()
         {
-            // Mock data for demonstration
             allData = new List<SensorData>
             {
                 new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_1", Pacifier = "pacifier_1", Sensor = "sensor_1", Value = 36.5 },
-                // Add more data as needed...
             };
         }
 
@@ -102,10 +100,10 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
     // Example data model for sensor data
     public class SensorData
     {
-        public string Timestamp { get; set; } = string.Empty;  // Avoid CS8618
-        public string Campaign { get; set; } = string.Empty;  // Avoid CS8618
-        public string Pacifier { get; set; } = string.Empty;  // Avoid CS8618
-        public string Sensor { get; set; } = string.Empty;  // Avoid CS8618
+        public string Timestamp { get; set; } = string.Empty;  
+        public string Campaign { get; set; } = string.Empty;  
+        public string Pacifier { get; set; } = string.Empty;  
+        public string Sensor { get; set; } = string.Empty;  
         public double Value { get; set; }
     }
 }
