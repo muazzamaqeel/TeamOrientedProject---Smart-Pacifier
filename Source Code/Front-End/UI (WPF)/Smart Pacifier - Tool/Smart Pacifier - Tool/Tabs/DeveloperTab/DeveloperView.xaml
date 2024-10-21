@@ -27,7 +27,7 @@
 
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Time Range" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
-                <ComboBox x:Name="TimeRange" Width="150" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                <ComboBox x:Name="TimeRange" Width="150" SelectionChanged="ComboBox_SelectionChanged">
                     <ComboBox.Style>
                         <Style TargetType="ComboBox">
                             <Style.Triggers>
@@ -42,7 +42,7 @@
 
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Campaign" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
-                <ComboBox x:Name="Campaign" Width="150" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                <ComboBox x:Name="Campaign" Width="150" SelectionChanged="ComboBox_SelectionChanged">
                     <ComboBox.Style>
                         <Style TargetType="ComboBox">
                             <Style.Triggers>
@@ -57,7 +57,7 @@
 
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Pacifier" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
-                <ComboBox x:Name="Pacifier" Width="150" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                <ComboBox x:Name="Pacifier" Width="150" SelectionChanged="ComboBox_SelectionChanged">
                     <ComboBox.Style>
                         <Style TargetType="ComboBox">
                             <Style.Triggers>
@@ -72,7 +72,7 @@
 
             <StackPanel Margin="5" HorizontalAlignment="Center">
                 <TextBlock Text="Sensor" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White"/>
-                <ComboBox x:Name="Sensor" Width="150" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                <ComboBox x:Name="Sensor" Width="150" SelectionChanged="ComboBox_SelectionChanged">
                     <ComboBox.Style>
                         <Style TargetType="ComboBox">
                             <Style.Triggers>

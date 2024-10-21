@@ -72,36 +72,88 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
             var selectedItems = DataListView.SelectedItems?.Cast<SensorData>().ToList();
+
             if (selectedItems != null && selectedItems.Count > 0)
             {
-                foreach (var item in selectedItems)
+                // Show confirmation dialog
+                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete the selected data?",
+                                                          "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+                // If the user confirms deletion
+                if (result == MessageBoxResult.Yes)
                 {
-                    allData?.Remove(item);
+                    foreach (var item in selectedItems)
+                    {
+                        allData?.Remove(item);
+                    }
+
+                    // Refresh the display
+                    DisplayData();
                 }
-                DisplayData();
+                // If Cancel is chosen, do nothing.
+            }
+            else
+            {
+                MessageBox.Show("Please select at least one entry to delete.");
             }
         }
+
 
         // Add button click
         private void AddButton_Click(object sender, RoutedEventArgs e)
         {
-            // Implement the popup for Add action here
-            // Add logic to add a new entry and refresh the list
+            AddDataWindow addDataWindow = new AddDataWindow();
+
+            // Open the window as a dialog
+            if (addDataWindow.ShowDialog() == true)
+            {
+                // Add the new data to the list if Save was clicked
+                var newData = new SensorData
+                {
+                    Timestamp = addDataWindow.Timestamp,
+                    Pacifier = addDataWindow.Pacifier,
+                    Campaign = addDataWindow.Campaign,
+                    Sensor = addDataWindow.Sensor,
+                    Value = addDataWindow.Value
+                };
+
+                allData.Add(newData);
+                DisplayData();
+            }
         }
+
 
         // Edit button click
         private void EditButton_Click(object sender, RoutedEventArgs e)
         {
             if (DataListView.SelectedItems.Count == 1)
             {
-                // Implement the popup for Edit action here
-                // Add logic to edit the selected entry and refresh the list
+                // Get the selected item
+                var selectedItem = (SensorData)DataListView.SelectedItem;
+
+                // Open the Edit Data Window with the selected item's data
+                EditDataWindow editDataWindow = new EditDataWindow(selectedItem);
+
+                // If Save is clicked, update the entry with the new data
+                if (editDataWindow.ShowDialog() == true)
+                {
+                    // Update the selected item with new values
+                    selectedItem.Timestamp = editDataWindow.Timestamp;
+                    selectedItem.Pacifier = editDataWindow.Pacifier;
+                    selectedItem.Campaign = editDataWindow.Campaign;
+                    selectedItem.Sensor = editDataWindow.Sensor;
+                    selectedItem.Value = editDataWindow.Value;
+
+                    // Refresh the data display
+                    DisplayData();
+                }
             }
             else
             {
                 MessageBox.Show("Please select one entry to edit.");
             }
         }
+
 
         // Handling placeholder-like behavior for ComboBox
         private void ComboBox_Loaded(object sender, RoutedEventArgs e)
