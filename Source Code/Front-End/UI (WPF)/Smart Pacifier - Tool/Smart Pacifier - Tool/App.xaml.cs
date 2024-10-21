@@ -21,8 +21,8 @@ namespace Smart_Pacifier___Tool
             //algoTestWindow.Show();
 
             // Uncomment the following if you want to open the Test window as well:
-            Test testWindow = new Test(databaseService);
-            testWindow.Show();
+            //Test testWindow = new Test(databaseService);
+            //testWindow.Show();
             // Pass services to the windows
             //var algoTestWindow = new Temp.AlgoTest(algorithmService);
             //var testWindow = new Temp.Test(databaseService);

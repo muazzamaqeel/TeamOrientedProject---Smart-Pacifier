@@ -3,14 +3,103 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:local="clr-namespace:Smart_Pacifier___Tool.Resources.Converters"
              mc:Ignorable="d"
              d:DesignHeight="450" d:DesignWidth="800">
-    <Grid>
-        <!-- To be removed-->
-        <TextBlock Text="Welcome to the Developer View"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   FontSize="24"
-                   FontWeight="Bold"/>
+
+    <!-- Define the resources -->
+    <UserControl.Resources>
+        <local:ColumnWidthConverter x:Key="ColumnWidthConverter"/>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Filter Controls -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,10,0,10">
+            <Button Content="Apply" Width="80" Margin="5" Click="ApplyButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
+            <ComboBox x:Name="TimeRange" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                <ComboBox.Style>
+                    <Style TargetType="ComboBox">
+                        <Style.Triggers>
+                            <Trigger Property="SelectedItem" Value="{x:Null}">
+                                <Setter Property="Text" Value="Select Time Range"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ComboBox.Style>
+            </ComboBox>
+            <ComboBox x:Name="Campaign" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                <ComboBox.Style>
+                    <Style TargetType="ComboBox">
+                        <Style.Triggers>
+                            <Trigger Property="SelectedItem" Value="{x:Null}">
+                                <Setter Property="Text" Value="Select Campaign"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ComboBox.Style>
+            </ComboBox>
+            <ComboBox x:Name="Pacifier" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                <ComboBox.Style>
+                    <Style TargetType="ComboBox">
+                        <Style.Triggers>
+                            <Trigger Property="SelectedItem" Value="{x:Null}">
+                                <Setter Property="Text" Value="Select Pacifier"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ComboBox.Style>
+            </ComboBox>
+            <ComboBox x:Name="Sensor" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                <ComboBox.Style>
+                    <Style TargetType="ComboBox">
+                        <Style.Triggers>
+                            <Trigger Property="SelectedItem" Value="{x:Null}">
+                                <Setter Property="Text" Value="Select Sensor"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ComboBox.Style>
+            </ComboBox>
+            <Button Content="Add" Width="80" Margin="5" Style="{StaticResource SmallModernButtonStyle}"/>
+            <Button Content="Edit" Width="80" Margin="5" Style="{StaticResource SmallModernButtonStyle}"/>
+            <Button Content="Delete" Width="80" Margin="5" Click="DeleteButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
+        </StackPanel>
+
+        <!-- Modernized Table (ListView) -->
+        <ListView Grid.Row="1" x:Name="DataListView" Margin="0,10,0,10" SelectionMode="Multiple"
+                  HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Timestamp" DisplayMemberBinding="{Binding Timestamp}" 
+                        Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 
+                                Path=ActualWidth, Converter={StaticResource ColumnWidthConverter}, ConverterParameter=0.2}" />
+                    <GridViewColumn Header="Campaign" DisplayMemberBinding="{Binding Campaign}" 
+                        Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 
+                                Path=ActualWidth, Converter={StaticResource ColumnWidthConverter}, ConverterParameter=0.2}" />
+                    <GridViewColumn Header="Pacifier" DisplayMemberBinding="{Binding Pacifier}" 
+                        Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 
+                                Path=ActualWidth, Converter={StaticResource ColumnWidthConverter}, ConverterParameter=0.2}" />
+                    <GridViewColumn Header="Sensor" DisplayMemberBinding="{Binding Sensor}" 
+                        Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 
+                                Path=ActualWidth, Converter={StaticResource ColumnWidthConverter}, ConverterParameter=0.2}" />
+                    <GridViewColumn Header="Value" DisplayMemberBinding="{Binding Value}" 
+                        Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 
+                                Path=ActualWidth, Converter={StaticResource ColumnWidthConverter}, ConverterParameter=0.2}" />
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <!-- Pagination Controls -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,10">
+            <Button Content="Previous" Width="100" Margin="5" Click="PreviousButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
+            <TextBlock Text="Page 1 of 5" VerticalAlignment="Center" Margin="10,0" FontFamily="Segoe UI" FontSize="14" />
+            <Button Content="Next" Width="100" Margin="5" Click="NextButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
+        </StackPanel>
     </Grid>
 </UserControl>
