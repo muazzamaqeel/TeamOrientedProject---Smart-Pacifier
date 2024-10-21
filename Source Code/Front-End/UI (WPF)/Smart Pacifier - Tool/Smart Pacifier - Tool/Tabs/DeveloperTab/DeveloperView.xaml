@@ -101,14 +101,19 @@
                   HorizontalContentAlignment="Stretch" VerticalContentAlignment="Center">
             <ListView.View>
                 <GridView>
-                    <!-- Added a column for checkboxes -->
-                    <GridViewColumn Header="">
+                    <!-- Added a checkbox in the header for selecting/deselecting all -->
+                    <GridViewColumn>
+                        <GridViewColumn.Header>
+                            <!-- Header CheckBox for select/deselect all -->
+                            <CheckBox Name="SelectAllCheckBox" Checked="SelectAllCheckBox_Checked" Unchecked="SelectAllCheckBox_Unchecked"/>
+                        </GridViewColumn.Header>
                         <GridViewColumn.CellTemplate>
                             <DataTemplate>
                                 <CheckBox IsChecked="{Binding IsSelected, RelativeSource={RelativeSource AncestorType=ListViewItem}}"/>
                             </DataTemplate>
                         </GridViewColumn.CellTemplate>
                     </GridViewColumn>
+
 
                     <GridViewColumn Header="Timestamp" DisplayMemberBinding="{Binding Timestamp}" 
                         Width="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type ListView}}, 

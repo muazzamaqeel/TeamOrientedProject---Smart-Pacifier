@@ -69,35 +69,34 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
         }
 
         // Delete selected entries with null check
-private void DeleteButton_Click(object sender, RoutedEventArgs e)
-{
-    var selectedItems = DataListView.SelectedItems?.Cast<SensorData>().ToList();
-    
-    if (selectedItems != null && selectedItems.Count > 0)
-    {
-        // Show confirmation dialog
-        MessageBoxResult result = MessageBox.Show("Are you sure you want to delete the selected data?", 
-                                                  "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
-
-        // If the user confirms deletion
-        if (result == MessageBoxResult.Yes)
+        private void DeleteButton_Click(object sender, RoutedEventArgs e)
         {
-            foreach (var item in selectedItems)
+            var selectedItems = DataListView.SelectedItems?.Cast<SensorData>().ToList();
+
+            if (selectedItems != null && selectedItems.Count > 0)
             {
-                allData?.Remove(item);
+                // Show confirmation dialog
+                MessageBoxResult result = MessageBox.Show("Are you sure you want to delete the selected data?",
+                                                          "Warning", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+                // If the user confirms deletion
+                if (result == MessageBoxResult.Yes)
+                {
+                    foreach (var item in selectedItems)
+                    {
+                        allData?.Remove(item);
+                    }
+
+                    // Refresh the display
+                    DisplayData();
+                }
+                // If Cancel is chosen, do nothing.
             }
-
-            // Refresh the display
-            DisplayData();
+            else
+            {
+                MessageBox.Show("Please select at least one entry to delete.");
+            }
         }
-        // If Cancel is chosen, do nothing.
-    }
-    else
-    {
-        MessageBox.Show("Please select at least one entry to delete.");
-    }
-}
-
 
         // Add button click
         private void AddButton_Click(object sender, RoutedEventArgs e)
@@ -121,7 +120,6 @@ private void DeleteButton_Click(object sender, RoutedEventArgs e)
                 DisplayData();
             }
         }
-
 
         // Edit button click
         private void EditButton_Click(object sender, RoutedEventArgs e)
@@ -153,32 +151,55 @@ private void DeleteButton_Click(object sender, RoutedEventArgs e)
                 MessageBox.Show("Please select one entry to edit.");
             }
         }
+
+        // Event handler when "Select All" checkbox is checked
+        private void SelectAllCheckBox_Checked(object sender, RoutedEventArgs e)
+        {
+            // Select all items in the DataListView
+            foreach (var item in DataListView.Items)
+            {
+                var listViewItem = DataListView.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
+                if (listViewItem != null)
+                {
+                    listViewItem.IsSelected = true;
+                }
+            }
+        }
+
+        // Event handler when "Select All" checkbox is unchecked
+        private void SelectAllCheckBox_Unchecked(object sender, RoutedEventArgs e)
+        {
+            // Deselect all items in the DataListView
+            foreach (var item in DataListView.Items)
+            {
+                var listViewItem = DataListView.ItemContainerGenerator.ContainerFromItem(item) as ListViewItem;
+                if (listViewItem != null)
+                {
+                    listViewItem.IsSelected = false;
+                }
+            }
+        }
+
         // Handling placeholder-like behavior for ComboBox
         private void ComboBox_Loaded(object sender, RoutedEventArgs e)
         {
             var comboBox = sender as ComboBox;
-
-            // Check if comboBox is not null
             if (comboBox != null)
             {
                 comboBox.SelectedIndex = -1;
             }
         }
+
         private void ComboBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             var comboBox = sender as ComboBox;
-
-            // Check if comboBox is not null
-            if (comboBox != null)
+            if (comboBox != null && comboBox.SelectedItem == null)
             {
-                if (comboBox.SelectedItem == null)
-                {
-                    comboBox.SelectedIndex = -1; // Reset selection if nothing is chosen
-                }
+                comboBox.SelectedIndex = -1; // Reset selection if nothing is chosen
             }
         }
+    }
 
-    }   
     // Example data model for sensor data
     public class SensorData
     {
