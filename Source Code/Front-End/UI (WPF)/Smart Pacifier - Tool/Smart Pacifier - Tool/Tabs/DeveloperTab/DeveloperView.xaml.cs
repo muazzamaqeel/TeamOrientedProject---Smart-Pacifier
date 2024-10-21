@@ -26,6 +26,10 @@ namespace Smart_Pacifier___Tool.Tabs.DeveloperTab
             allData = new List<SensorData>
             {
                 new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_1", Pacifier = "pacifier_1", Sensor = "sensor_1", Value = 36.5 },
+                new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_3", Pacifier = "pacifier_1", Sensor = "sensor_1", Value = 311.5 },
+                new SensorData { Timestamp = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"), Campaign = "campaign_2", Pacifier = "pacifier_2", Sensor = "sensor_1", Value = 36.5 },
+
+
             };
         }
 
