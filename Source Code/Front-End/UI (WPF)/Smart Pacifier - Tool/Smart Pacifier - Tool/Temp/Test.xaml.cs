@@ -69,6 +69,7 @@ namespace Smart_Pacifier___Tool.Temp
         }
 
         // Method to load pacifiers for the selected campaign
+        // Method to load pacifiers for the selected campaign
         public async void LoadPacifiers(string selectedCampaign)
         {
             _pacifiers.Clear();  // Clear the current list of pacifiers
@@ -79,25 +80,34 @@ namespace Smart_Pacifier___Tool.Temp
                 return;
             }
 
-            // Fetch pacifiers for the selected campaign from the database
-            var pacifiersFromDb = await _managerPacifiers.GetPacifiersAsync(selectedCampaign);
-
-            if (pacifiersFromDb != null && pacifiersFromDb.Count > 0)
+            // Check if _managerPacifiers is initialized
+            if (_managerPacifiers != null)
             {
-                foreach (var pacifier in pacifiersFromDb)
-                {
-                    _pacifiers.Add(pacifier);
-                }
+                // Fetch pacifiers for the selected campaign from the database
+                var pacifiersFromDb = await _managerPacifiers.GetPacifiersAsync(selectedCampaign);
 
-                // Refresh the PacifierComboBox with pacifiers
-                PacifierComboBox.ItemsSource = null;  // Clear ComboBox
-                PacifierComboBox.ItemsSource = _pacifiers;  // Bind pacifiers to ComboBox
+                if (pacifiersFromDb != null && pacifiersFromDb.Count > 0)
+                {
+                    foreach (var pacifier in pacifiersFromDb)
+                    {
+                        _pacifiers.Add(pacifier);
+                    }
+
+                    // Refresh the PacifierComboBox with pacifiers
+                    PacifierComboBox.ItemsSource = null;  // Clear ComboBox
+                    PacifierComboBox.ItemsSource = _pacifiers;  // Bind pacifiers to ComboBox
+                }
+                else
+                {
+                    MessageBox.Show("No pacifiers found for the selected campaign.");
+                }
             }
             else
             {
-                MessageBox.Show("No pacifiers found for the selected campaign.");
+                MessageBox.Show("Pacifier manager is not initialized.");
             }
         }
+
 
 
         // Event handler for when a campaign is selected, triggering loading of pacifiers
