@@ -2,6 +2,7 @@
 using System.Windows;
 using SmartPacifier.Interface.Services;
 using SmartPacifier.Interface;  // Reference the Interface
+using Smart_Pacifier___Tool.Temp;
 
 namespace Smart_Pacifier___Tool
 {
@@ -13,21 +14,21 @@ namespace Smart_Pacifier___Tool
 
             // Create services using the factory methods (implemented in the same class)
             IAlgorithmLayer algorithmService = CreateAlgorithmService();
-            IDatabaseService databaseService = CreateDatabaseService("http://localhost:8086", "mOUzJzz7YYY4DTyt8FoaHZAKP8pgQ15b75VBC81f-pTlgURAg94lulE_arUtbFsdKfPGQKgvY3aQxtnKmWDbtA==");
+            IDatabaseService databaseService = CreateDatabaseService("http://localhost:8086", "Ui71geKMxY2e7R5hcknCQivDIiK7drc3jJl5WZ6nIHMpGkzKAAPxLelsWePJUCt-qLPeB6k9z8YAXkcWZGM1qA==");
 
             // Open the AlgoTest window
             //AlgoTest algoTestWindow = new AlgoTest(serviceFactory);
             //algoTestWindow.Show();
 
             // Uncomment the following if you want to open the Test window as well:
-            //Test testWindow = new Test(serviceFactory);
-            //testWindow.Show();
+            Test testWindow = new Test(databaseService);
+            testWindow.Show();
             // Pass services to the windows
             //var algoTestWindow = new Temp.AlgoTest(algorithmService);
             //var testWindow = new Temp.Test(databaseService);
 
             //algoTestWindow.Show();
-            //testWindow.Show();
+            //indow.Show();
         }
 
         // Factory method to create an algorithm service
