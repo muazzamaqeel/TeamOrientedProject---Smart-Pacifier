@@ -19,57 +19,59 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Filter Controls -->
-        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,10,0,10">
-            <Button Content="Apply" Width="80" Margin="5" Click="ApplyButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
-            <ComboBox x:Name="TimeRange" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
-                <ComboBox.Style>
-                    <Style TargetType="ComboBox">
-                        <Style.Triggers>
-                            <Trigger Property="SelectedItem" Value="{x:Null}">
-                                <Setter Property="Text" Value="Select Time Range"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </ComboBox.Style>
-            </ComboBox>
-            <ComboBox x:Name="Campaign" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
-                <ComboBox.Style>
-                    <Style TargetType="ComboBox">
-                        <Style.Triggers>
-                            <Trigger Property="SelectedItem" Value="{x:Null}">
-                                <Setter Property="Text" Value="Select Campaign"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </ComboBox.Style>
-            </ComboBox>
-            <ComboBox x:Name="Pacifier" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
-                <ComboBox.Style>
-                    <Style TargetType="ComboBox">
-                        <Style.Triggers>
-                            <Trigger Property="SelectedItem" Value="{x:Null}">
-                                <Setter Property="Text" Value="Select Pacifier"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </ComboBox.Style>
-            </ComboBox>
-            <ComboBox x:Name="Sensor" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
-                <ComboBox.Style>
-                    <Style TargetType="ComboBox">
-                        <Style.Triggers>
-                            <Trigger Property="SelectedItem" Value="{x:Null}">
-                                <Setter Property="Text" Value="Select Sensor"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </ComboBox.Style>
-            </ComboBox>
-            <Button Content="Add" Width="80" Margin="5" Style="{StaticResource SmallModernButtonStyle}"/>
-            <Button Content="Edit" Width="80" Margin="5" Style="{StaticResource SmallModernButtonStyle}"/>
-            <Button Content="Delete" Width="80" Margin="5" Click="DeleteButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
-        </StackPanel>
+        <!-- Centered Filter Controls -->
+        <Grid Grid.Row="0" HorizontalAlignment="Center" Margin="0,10,0,10">
+            <StackPanel Orientation="Horizontal">
+                <Button Content="Apply" Width="80" Margin="5" Click="ApplyButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
+                <ComboBox x:Name="TimeRange" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                    <ComboBox.Style>
+                        <Style TargetType="ComboBox">
+                            <Style.Triggers>
+                                <Trigger Property="SelectedItem" Value="{x:Null}">
+                                    <Setter Property="Text" Value="Select Time Range"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Style>
+                </ComboBox>
+                <ComboBox x:Name="Campaign" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                    <ComboBox.Style>
+                        <Style TargetType="ComboBox">
+                            <Style.Triggers>
+                                <Trigger Property="SelectedItem" Value="{x:Null}">
+                                    <Setter Property="Text" Value="Select Campaign"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Style>
+                </ComboBox>
+                <ComboBox x:Name="Pacifier" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                    <ComboBox.Style>
+                        <Style TargetType="ComboBox">
+                            <Style.Triggers>
+                                <Trigger Property="SelectedItem" Value="{x:Null}">
+                                    <Setter Property="Text" Value="Select Pacifier"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Style>
+                </ComboBox>
+                <ComboBox x:Name="Sensor" Width="150" Margin="5" Loaded="ComboBox_Loaded" SelectionChanged="ComboBox_SelectionChanged">
+                    <ComboBox.Style>
+                        <Style TargetType="ComboBox">
+                            <Style.Triggers>
+                                <Trigger Property="SelectedItem" Value="{x:Null}">
+                                    <Setter Property="Text" Value="Select Sensor"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ComboBox.Style>
+                </ComboBox>
+                <Button Content="Add" Width="80" Margin="5" Style="{StaticResource SmallModernButtonStyle}"/>
+                <Button Content="Edit" Width="80" Margin="5" Style="{StaticResource SmallModernButtonStyle}"/>
+                <Button Content="Delete" Width="80" Margin="5" Click="DeleteButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
+            </StackPanel>
+        </Grid>
 
         <!-- Modernized Table (ListView) -->
         <ListView Grid.Row="1" x:Name="DataListView" Margin="0,10,0,10" SelectionMode="Multiple"
@@ -98,7 +100,8 @@
         <!-- Pagination Controls -->
         <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,10">
             <Button Content="Previous" Width="100" Margin="5" Click="PreviousButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
-            <TextBlock Text="Page 1 of 5" VerticalAlignment="Center" Margin="10,0" FontFamily="Segoe UI" FontSize="14" />
+            <TextBlock Text="Page 1 of 5" VerticalAlignment="Center" Margin="10,0" 
+                       FontFamily="Segoe UI" FontSize="14" Foreground="White" />
             <Button Content="Next" Width="100" Margin="5" Click="NextButton_Click" Style="{StaticResource SmallModernButtonStyle}"/>
         </StackPanel>
     </Grid>
