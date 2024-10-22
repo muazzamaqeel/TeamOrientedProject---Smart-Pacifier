@@ -129,7 +129,10 @@ A line may exceed 80 characters if it is:
   - Single-line comments: Use //.
   - Multi-line comments: Use /* */.
   - XML comments: Use /// for documentation.
-  
+
+For detailed information click
+[here](https://learn.microsoft.com/en-us/dynamics365/business-central/dev-itpro/developer/devenv-xml-comments)
+
 ## Example
 ```c#
 // Good code example
