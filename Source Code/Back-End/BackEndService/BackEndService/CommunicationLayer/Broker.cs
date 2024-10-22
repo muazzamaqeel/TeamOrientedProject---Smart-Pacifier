@@ -6,17 +6,19 @@ using System.Threading.Tasks;
 using System.Diagnostics;
 
 using MQTTnet;
-using MQTTnet.Server;
+using MQTTnet.Protocol;
 using MQTTnet.Client;
 
 namespace SmartPacifier.BackEnd.IOTProtocols
 {
-    internal class Broker
+    public class Broker
     {
         private static Broker _brokerInstance;
         private static readonly object _lock = new object();
 
-	private readonly MqttClient _mqttClient;
+	private IMqttClient _mqttClient;
+	//private readonly MQTTnet.Server.MqttClient _mqttServer;
+	
         private readonly string _brokerAddress = "localhost";
         private readonly int _brokerPort = 1883;
 
@@ -27,16 +29,17 @@ namespace SmartPacifier.BackEnd.IOTProtocols
 	/// </summary>
         private Broker()
         {
-            StartBroker();
-            _mqttClient = new MqttClient();
+	    var factory = new MqttFactory();
+	    _mqttClient = factory.CreateMqttClient();
+	    StartBroker();
+	    //ConnectBroker();
         }
 	///<summary>
 	/// Destructor to clean up the Broker
 	///</summary>
         ~Broker()
         {
-	    
-            StopBroker();
+	    StopBroker();
         }
 
 	/// <summary>
@@ -63,11 +66,11 @@ namespace SmartPacifier.BackEnd.IOTProtocols
 	/// Starting Mosquitto as a child process
 	/// </summary>
 	/// <returns>True if process started sucessfully, false otherwise</returns>
-        bool StartBroker()
+        public bool StartBroker()
 	{
 	    var processStartInfo = new ProcessStartInfo();
-	    processStartInfo.FileName = "mosquitto.exe"; // path to Mosquitto executable
-	    processStartInfo.Arguments = "-c mosquitto.conf"; //Mosquitto command-line arguments
+	    processStartInfo.FileName = "mosquitto"; // path to Mosquitto executable
+	    processStartInfo.Arguments = "-v "; //Mosquitto command-line arguments
 	    processStartInfo.UseShellExecute = false;
 	    processStartInfo.RedirectStandardOutput = true;
 	    processStartInfo.RedirectStandardError = true;
@@ -90,58 +93,47 @@ namespace SmartPacifier.BackEnd.IOTProtocols
             }
 	}
 
-        void StopBroker()
+        public void StopBroker()
         {
             _brokerProcess.Close();
         }
 
         public async Task ConnectBroker()
 	{
-	    var options = new MqttClientOptions();
-            options.Server = new MqttServer(_brokerAddress, _brokerPort);
-
-            try
-            {
-                await _mqttClient.ConnectAsync(options);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine("Failed to connect to MQTT broker: " + ex.Message);
-                return;
-            }
-	    // Subscribe to all messages (adjust the topic filter as needed)
-            await _mqttClient.SubscribeAsync(new TopicSubscriptionBuilder()
-                .WithTopic("#") // Subscribe to all topics
-                .WithQualityOfService(MqttQualityOfService.AtLeastOnce)
-                .Build());
-
-            _mqttClient.ApplicationMessageReceived += async (sender, e) =>
-            {
-                var message = e.ApplicationMessage;
-                Console.WriteLine($"Received message: {message.Topic} - {message.Payload}");
-
-                // TODO Store the message 
-            };
-
-	}
-	public async Task SendMessageToAllSensorNodesAsync(string message)
-	{
-	    var topic = "to_all_sensor_nodes"; // Adjust the topic as needed
-	    var mqttMessage = new MqttApplicationMessageBuilder()
-		.WithTopic(topic)
-		.WithPayload(message)
-		.WithQualityOfService(MqttQualityOfService.AtLeastOnce)
+	    // Use TCP connection.
+	    var options = new MqttClientOptionsBuilder()
+		.WithTcpServer("broker.hivemq.com", 1883) // Optional port
 		.Build();
-
+	    
 	    try
 	    {
-		await _mqttClient.PublishAsync(mqttMessage);
-		Console.WriteLine("Message sent to all sensor nodes.");
+		await _mqttClient.ConnectAsync(options);
 	    }
 	    catch (Exception ex)
 	    {
-		Console.WriteLine("Failed to send message to sensor nodes: " + ex.Message);
+		Console.WriteLine("Failed to connect to MQTT broker: " + ex.Message);
+		return;
 	    }
+	   Console.WriteLine("Sucessfully Connected to MQTT broker "); 
 	}
+	// public async Task SendMessageToAllSensorNodesAsync(string message)
+	// {
+	//     var topic = "to_all_sensor_nodes"; // Adjust the topic as needed
+	//     var mqttMessage = new MqttApplicationMessageBuilder()
+	// 	.WithTopic(topic)
+	// 	.WithPayload(message)
+	// 	.WithQualityOfService(MqttQualityOfService.AtLeastOnce)
+	// 	.Build();
+
+	//     try
+	//     {
+	// 	await _mqttClient.PublishAsync(mqttMessage);
+	// 	Console.WriteLine("Message sent to all sensor nodes.");
+	//     }
+	//     catch (Exception ex)
+	//     {
+	// 	Console.WriteLine("Failed to send message to sensor nodes: " + ex.Message);
+	//     }
+	// }
     }
 }
