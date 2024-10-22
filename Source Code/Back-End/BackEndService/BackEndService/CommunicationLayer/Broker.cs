@@ -23,6 +23,8 @@ namespace SmartPacifier.BackEnd.IOTProtocols
         private readonly int _brokerPort = 1883;
 
         private Process _brokerProcess;
+	private Task _brokerTask;
+	private bool _isBrokerRunning = false;
 
 	/// <summary>
 	/// Constructor for the Broker class
@@ -66,32 +68,55 @@ namespace SmartPacifier.BackEnd.IOTProtocols
 	/// Starting Mosquitto as a child process
 	/// </summary>
 	/// <returns>True if process started sucessfully, false otherwise</returns>
-        public bool StartBroker()
+        public void StartBroker()
 	{
-	    var processStartInfo = new ProcessStartInfo();
-	    processStartInfo.FileName = "mosquitto"; // path to Mosquitto executable
-	    processStartInfo.Arguments = "-v "; //Mosquitto command-line arguments
-	    processStartInfo.UseShellExecute = false;
-	    processStartInfo.RedirectStandardOutput = true;
-	    processStartInfo.RedirectStandardError = true;
+	    _brokerTask = Task.Run(() =>
+	    {
+		_isBrokerRunning = true;
+		var processStartInfo = new ProcessStartInfo();
+		processStartInfo.FileName = "mosquitto"; // path to Mosquitto executable
+		processStartInfo.Arguments = ""; //Mosquitto command-line arguments
+		processStartInfo.UseShellExecute = false;
+		processStartInfo.RedirectStandardOutput = true;
+		processStartInfo.RedirectStandardError = true;
 
-	    _brokerProcess = Process.Start(processStartInfo);
+		_brokerProcess = Process.Start(processStartInfo);
 	    
-	    if (_brokerProcess != null)
-	    {
-		// Optionally, you can read the output from the Mosquitto process
-		var output = _brokerProcess.StandardOutput.ReadToEnd();
-		var error = _brokerProcess.StandardError.ReadToEnd();
-		Console.WriteLine("Mosquitto output:\n" + output);
-		Console.WriteLine("Mosquitto errors:\n" + error);
-                return true;
-            }
-	    else
-	    {
-		Console.WriteLine("Failed to start Mosquitto process.");
-                return false;
-            }
+		if (_brokerProcess != null)
+		{
+		    // Optionally, you can read the output from the Mosquitto process
+		    var output = _brokerProcess.StandardOutput.ReadToEnd();
+		    var error = _brokerProcess.StandardError.ReadToEnd();
+		    Console.WriteLine("Mosquitto output:\n" + output);
+		    Console.WriteLine("Mosquitto errors:\n" + error);
+		    // return true;
+		}
+		else
+		{
+		    Console.WriteLine("Failed to start Mosquitto process.");
+		    _isBrokerRunning = false;
+		    //return false;
+		}
+	    });
+	    //return false;
+	    MonitorTaskStatus();
 	}
+	/// <summary>
+        /// Prints the task status periodically.
+        /// </summary>
+        public void MonitorTaskStatus()
+        {
+            Task.Run(() =>
+            {
+                while (_isBrokerRunning)
+                {
+                    Console.WriteLine("Broker process is still running...");
+                    Thread.Sleep(1000); // Wait 1 second before checking again
+                }
+
+                Console.WriteLine("Broker process has stopped.");
+            });
+        }
 
         public void StopBroker()
         {
