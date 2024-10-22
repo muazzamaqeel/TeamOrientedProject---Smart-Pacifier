@@ -15,8 +15,8 @@ namespace SmartPacifier___TestingFramework.UnitTests.Unit_Tests_BackEnd.Unit_Tes
         public async Task Constructor_ShouldInitializeClient_AndAuthenticate_WithCorrectUrlAndToken()
         {
             // Arrange
-            string url = "http://localhost:86086";
-            string validToken = "your-valid-token";
+            string url = "http://localhost:8086";
+            string validToken = "Ui71geKMxY2e7R5hcknCQivDIiK7drc3jJl5WZ6nIHMpGkzKAAPxLelsWePJUCt-qLPeB6k9z8YAXkcWZGM1qA==";
 
             // Act
             var service = InfluxDatabaseService.GetInstance(url, validToken);
