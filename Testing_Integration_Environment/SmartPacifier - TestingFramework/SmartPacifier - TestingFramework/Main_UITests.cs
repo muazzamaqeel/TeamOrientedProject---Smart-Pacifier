@@ -30,7 +30,6 @@ namespace SmartPacifier___TestingFramework
         /// <summary>
         /// Manually run the CheckButtonsExistenceInSettingsTab test from the UITests_Settings class.
         /// </summary>
-        [Fact]
         public void RunSettingsTabTests()
         {
             app = LaunchApplication();

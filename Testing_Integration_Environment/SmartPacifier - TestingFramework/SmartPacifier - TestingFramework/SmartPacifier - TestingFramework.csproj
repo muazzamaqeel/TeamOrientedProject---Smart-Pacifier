@@ -38,12 +38,15 @@
 	  <Folder Include="UITests\UI_Tests-BackEnd\" />
 	  <Folder Include="UnitTests\UnitTests_Services\" />
 	  <Folder Include="UnitTests\Unit_Templates\" />
-	  <Folder Include="UnitTests\Unit_Tests_BackEnd\" />
 	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\" />
 	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_MonitoringTab\" />
 	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_SettingsTab\" />
 	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_DeveloperTab\" />
 	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\Unit_Tests_CampaignsTab\" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <ProjectReference Include="..\..\..\Source Code\Back-End\BackEndService\BackEndService\SmartPacifier.BackEnd.csproj" />
 	</ItemGroup>
 
 </Project>
