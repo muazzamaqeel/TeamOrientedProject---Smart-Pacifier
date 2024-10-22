@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using InfluxDB.Client;
 using InfluxDB.Client.Api.Domain;
 using InfluxDB.Client.Writes;
@@ -7,12 +8,10 @@ using SmartPacifier.Interface.Services;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 {
-
     //<summary>
-    //This class is a service class that connects to the InfluxDB database
-    //It implements the IDatabaseService interface
-    //The WriteData method writes data to the InfluxDB database
-    //The ReadData method reads data from the InfluxDB database
+    // This class connects to InfluxDB and implements the IDatabaseService interface.
+    // The WriteData method writes data to InfluxDB.
+    // The ReadData method queries InfluxDB.
     //</summary>
     public class InfluxDatabaseService : IDatabaseService
     {
@@ -24,7 +23,7 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
 
         private InfluxDatabaseService(string url, string token)
         {
-            _client = new InfluxDBClient(url, token);
+            _client = new InfluxDBClient(url, token); // Use the new constructor directly
         }
 
         public static InfluxDatabaseService GetInstance(string url, string token)
@@ -42,55 +41,92 @@ namespace SmartPacifier.BackEnd.Database.InfluxDB.Connection
             return _instance;
         }
 
-        public void WriteData(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
+        // Expose InfluxDBClient so other classes can use it
+        public InfluxDBClient GetClient()
+        {
+            return _client;
+        }
+
+        public async Task WriteDataAsync(string measurement, Dictionary<string, object> fields, Dictionary<string, string> tags)
         {
             try
             {
-                var point = PointData.Measurement(measurement)
-                    .Timestamp(DateTime.UtcNow, WritePrecision.Ns);
+                var point = PointData.Measurement(measurement);
 
+                // Add tags to the point
                 foreach (var tag in tags)
                 {
                     point = point.Tag(tag.Key, tag.Value);
                 }
 
+                // Add fields to the point
                 foreach (var field in fields)
                 {
-                    point = point.Field(field.Key, field.Value);
+                    if (field.Value is float)
+                        point = point.Field(field.Key, (float)field.Value);
+                    else if (field.Value is double)
+                        point = point.Field(field.Key, (double)field.Value);
+                    else if (field.Value is int)
+                        point = point.Field(field.Key, (int)field.Value);
+                    else if (field.Value is string)
+                        point = point.Field(field.Key, (string)field.Value);
                 }
 
-                using (var writeApi = _client.GetWriteApi())
-                {
-                    writeApi.WritePoint(point, _bucket, _org);
-                }
+                // Assign timestamp and precision
+                point = point.Timestamp(DateTime.UtcNow, WritePrecision.Ns);
+
+                var writeApi = _client.GetWriteApiAsync();
+                await writeApi.WritePointAsync(point, _bucket, _org);
             }
             catch (Exception ex)
             {
-                throw new Exception($"Error writing data: {ex.Message}");
+                Console.WriteLine($"Error writing data: {ex.Message}");
             }
         }
 
         public List<string> ReadData(string query)
         {
+            var results = new List<string>();
+            // Implementation of data reading logic goes here.
+            return results;
+        }
+
+        // WriteDataAsync method stays the same as before
+
+        public async Task<List<string>> GetCampaignsAsync()
+        {
+            var campaigns = new List<string>();
             try
             {
-                var queryApi = _client.GetQueryApi();
-                var tables = queryApi.QueryAsync(query, _org).Result;
+                var fluxQuery = $"from(bucket: \"{_bucket}\") " +
+                                "|> range(start: -30d) " +  // Adjust the time range if needed
+                                "|> keep(columns: [\"campaign_name\"]) " +
+                                "|> distinct(column: \"campaign_name\")";
 
-                var results = new List<string>();
+                // Use _client.GetQueryApi() to access the query API
+                var queryApi = _client.GetQueryApi();
+                var tables = await queryApi.QueryAsync(fluxQuery, _org);
+
+                Console.WriteLine("Query executed, parsing results...");
                 foreach (var table in tables)
                 {
                     foreach (var record in table.Records)
                     {
-                        results.Add(record.ToString());
+                        var campaignName = record.GetValueByKey("campaign_name")?.ToString();
+                        if (!string.IsNullOrEmpty(campaignName))
+                        {
+                            Console.WriteLine($"Found campaign: {campaignName}");
+                            campaigns.Add(campaignName);
+                        }
                     }
                 }
-                return results;
             }
             catch (Exception ex)
             {
-                throw new UnauthorizedAccessException("Unauthorized access. Check token and permissions.", ex);
+                Console.WriteLine($"Error retrieving campaigns: {ex.Message}");
             }
+
+            return campaigns;
         }
     }
 }
