@@ -55,6 +55,12 @@
                 </Grid.RowDefinitions>
                 <StackPanel x:Name="pacifierSectionsPanel" Orientation="Vertical" />
                 <local:LineChartGraph x:Name="lineChartGraph" Grid.Row="1" />
+                <Button Content="Open Raw Data View"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                FontSize="16"
+                Padding="10"
+                Click="OpenRawDataView_Click"/>
             </Grid>
         </ScrollViewer>
     </Grid>
