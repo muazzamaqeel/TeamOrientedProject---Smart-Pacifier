@@ -36,6 +36,7 @@
 
 	<ItemGroup>
 	  <Folder Include="UITests\UI_Tests-BackEnd\" />
+	  <Folder Include="UnitTests\UnitTests_Services\" />
 	  <Folder Include="UnitTests\Unit_Templates\" />
 	  <Folder Include="UnitTests\Unit_Tests_BackEnd\" />
 	  <Folder Include="UnitTests\Unit_Tests_FrontEnd\Unit_Tests_Tabs\" />
