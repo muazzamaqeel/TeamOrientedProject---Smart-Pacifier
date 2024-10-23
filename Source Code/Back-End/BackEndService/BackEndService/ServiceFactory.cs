@@ -1,4 +1,6 @@
-﻿using SmartPacifier.Interface.Services;
+﻿using SmartPacifier.BackEnd.Database.InfluxDB.Connection;
+using SmartPacifier.Interface.Services;
+using SmartPacifier.BackEnd.Database.InfluxDB.Managers;
 
 
 //<summary>
@@ -11,16 +13,18 @@
 
 namespace SmartPacifier.BackEnd
 {
-    public class ServiceFactory : IServiceFactory
+    public class ServiceFactory: IServiceFactory
+
+
     {
         public IAlgorithmLayer CreateAlgorithmService()
         {
             return AlgorithmLayer.PythonScriptEngine.GetInstance();
         }
 
-        public IDatabaseService CreateDatabaseService(string url, string token)
+        IDatabaseService IServiceFactory.CreateDatabaseService(string url, string token)
         {
-            return Database.InfluxDB.Connection.InfluxDatabaseService.GetInstance(url, token);
+            return InfluxDatabaseService.GetInstance(url, token);
         }
     }
 }
