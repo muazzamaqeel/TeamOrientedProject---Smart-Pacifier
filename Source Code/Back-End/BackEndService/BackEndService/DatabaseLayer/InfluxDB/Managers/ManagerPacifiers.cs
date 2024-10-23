@@ -7,7 +7,7 @@ using SmartPacifier.Interface.Services;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 {
-    public partial class ManagerPacifiers : IDatabaseService
+    public partial class ManagerPacifiers : IManagerPacifiers
     {
         private readonly InfluxDBClient _client;
         private readonly IDatabaseService _databaseService;

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace SmartPacifier.BackEnd.Database.InfluxDB.Managers
 {
-    public class ManagerCampaign : IDatabaseService
+    public class ManagerCampaign : IManagerCampaign
     {
         private readonly IDatabaseService _databaseService;
 
