@@ -1,4 +1,5 @@
 ﻿using SmartPacifier.BackEnd.IOTProtocols;
+using System;
 
 class TestClass
 {
@@ -6,5 +7,10 @@ class TestClass
     {
 	Broker broker = Broker.Instance;
 	await broker.ConnectBroker();
+	await broker.SubscribeToAll();
+	while(true){
+	    //broker.ReadBrokerOutput();
+	    Thread.Sleep(1000);
+	}
     }
 }

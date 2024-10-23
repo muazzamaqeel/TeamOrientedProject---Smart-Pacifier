@@ -8,6 +8,7 @@ using System.Diagnostics;
 using MQTTnet;
 using MQTTnet.Protocol;
 using MQTTnet.Client;
+using MQTTnet.Packets;
 
 namespace SmartPacifier.BackEnd.IOTProtocols
 {
@@ -19,7 +20,7 @@ namespace SmartPacifier.BackEnd.IOTProtocols
         private static Broker? _brokerInstance;
         private static readonly object _lock = new object();
 
-        private IMqttClient? _mqttClient;
+        private IMqttClient _mqttClient;
         //private readonly MQTTnet.Server.MqttClient _mqttServer;
 
         private Process _brokerProcess;
@@ -81,11 +82,7 @@ namespace SmartPacifier.BackEnd.IOTProtocols
 
 	    if (_brokerProcess != null)
 	    {
-		// Optionally, you can read the output from the Mosquitto process
-		var output = _brokerProcess.StandardOutput.ReadToEnd();
-		var error = _brokerProcess.StandardError.ReadToEnd();
-		Console.WriteLine("Mosquitto output:\n" + output);
-		Console.WriteLine("Mosquitto errors:\n" + error);
+		ReadBrokerOutput();
 	    }
 	    else
 	    {
@@ -93,7 +90,15 @@ namespace SmartPacifier.BackEnd.IOTProtocols
 		_isBrokerRunning = false;
 	    }
         } 
-
+	public void ReadBrokerOutput(){
+	    // Optionally, you can read the output from the Mosquitto process
+	    var output = _brokerProcess.StandardOutput.ReadToEnd();
+	    var error = _brokerProcess.StandardError.ReadToEnd();
+	    Console.WriteLine("Mosquitto output:\n" + output);
+	    Console.WriteLine("Mosquitto errors:\n" + error);
+	    
+	}
+	
         public void StopBroker()
         {
             _brokerProcess.Close();
@@ -117,6 +122,29 @@ namespace SmartPacifier.BackEnd.IOTProtocols
             }
             Console.WriteLine("Sucessfully Connected to MQTT broker ");
         }
+
+	public async Task SubscribeToAll()
+	{
+	    Console.WriteLine("### CONNECTED WITH SERVER ###");
+
+	    // Subscribe to a topic
+	    await _mqttClient.SubscribeAsync(
+		new MqttTopicFilterBuilder().WithTopic("#").Build());
+
+	    Console.WriteLine("### SUBSCRIBED ###");
+	    _mqttClient.ApplicationMessageReceivedAsync += e =>
+            {
+                Console.WriteLine("Received application message.");
+                Console.WriteLine("### RECEIVED APPLICATION MESSAGE ###");
+		Console.WriteLine($"+ Topic = {e.ApplicationMessage.Topic}");
+		Console.WriteLine($"+ Payload = {Encoding.UTF8.GetString(e.ApplicationMessage.Payload)}");
+		Console.WriteLine($"+ QoS = {e.ApplicationMessage.QualityOfServiceLevel}");
+		Console.WriteLine($"+ Retain = {e.ApplicationMessage.Retain}");
+		Console.WriteLine();
+
+                return Task.CompletedTask;
+            };
+	}
 	
         // public async Task SendMessageToAllSensorNodesAsync(string message)
         // {
