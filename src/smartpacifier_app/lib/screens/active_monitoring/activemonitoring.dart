@@ -82,27 +82,27 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     _sub = Connector()
         .dataStreamFor(widget.backend)
         .listen(
-      (SensorPacket packet) {
+        (SensorPacket packet) {
 
-        _packetCount++;
+          _packetCount++;
 
-        _handleSensorData(packet);
+          _handleSensorData(packet);
 
-        _needsRebuild = true;
+          _needsRebuild = true;
 
-        final line =
-            '[${DateTime.now().toIso8601String()}] '
-            '[${packet.sensorGroup}] '
-            'pacifier=${packet.pacifierId}, '
-            'type=${packet.sensorType}, '
-            'values=${packet.values}';
+          final line =
+              '[${DateTime.now().toIso8601String()}] '
+              '[${packet.sensorGroup}] '
+              'pacifier=${packet.pacifierId}, '
+              'type=${packet.sensorType}, '
+              'values=${packet.values}';
 
-        _logs.add(line);
+          _logs.add(line);
 
-        if (_logs.length > 200) {
-          _logs.removeAt(0);
-        }
-      },
+          if (_logs.length > 200) {
+            _logs.removeAt(0);
+          }
+        },
       onError: (e) {
         _logs.add('[${DateTime.now().toIso8601String()}] Error: $e');
         if (_logs.length > 200) _logs.removeAt(0);

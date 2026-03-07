@@ -456,39 +456,96 @@ FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\goog
 ================================================================================
 FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\deserialization.dart
 ================================================================================
-import 'dart:typed_data';
 import '../../generated/sensor_data.pb.dart' as protos;
+import 'sensor_packet.dart';
 
-/// Given a fully-flattened SensorData.dataMap, decode every 4-byte entry
-/// into a num (float if finite, otherwise int), and automatically handle
-/// any repeated/unnamed indices by appending “_0”, “_1”, etc.
-class DataDeserializer {
-  static Map<String, num> parsePayload(protos.SensorData sd) {
-    final out = <String, num>{};
-    sd.dataMap.forEach((key, raw) {
-      final bytes = raw is Uint8List ? raw : Uint8List.fromList(raw);
-      final bd = ByteData.sublistView(bytes);
+class SensorDeserializer {
 
-      // If exactly 4 bytes: single scalar
-      if (bytes.length == 4) {
-        final f = bd.getFloat32(0, Endian.little);
-        out[key] = f.isFinite ? f : bd.getInt32(0, Endian.little);
-      }
-      // If N×4 bytes: N‐length array of scalars
-      else if (bytes.length % 4 == 0) {
-        final count = bytes.length ~/ 4;
-        for (var i = 0; i < count; i++) {
-          final f = bd.getFloat32(4 * i, Endian.little);
-          final v = f.isFinite ? f : bd.getInt32(4 * i, Endian.little);
-          out['${key}_$i'] = v.toDouble();
+  static SensorPacket parse(
+    String topic,
+    List<int> payload,
+  ) {
+
+    final parts = topic.split('/');
+
+    final pacifierId = parts.length > 1 ? parts[1] : "0";
+    final sensorType = parts.length > 2 ? parts[2] : "unknown";
+    final group = parts.length > 0 ? parts[0] : "backend";
+
+    final values = <String, num>{};
+
+    switch (sensorType) {
+
+      /// IMU SENSOR
+      case "imu":
+        final msg = protos.IMUData.fromBuffer(payload);
+
+        values["temperature"] = msg.temperature;
+
+        values["acc_x"] = msg.acc.x;
+        values["acc_y"] = msg.acc.y;
+        values["acc_z"] = msg.acc.z;
+
+        values["gyro_x"] = msg.gyro.x;
+        values["gyro_y"] = msg.gyro.y;
+        values["gyro_z"] = msg.gyro.z;
+
+        break;
+
+      /// AIRFLOW SENSOR
+      case "airflow":
+        final msg = protos.AIRFLOWData.fromBuffer(payload);
+
+        values["voltage_l"] = msg.voltage10kL;
+        values["voltage_r"] = msg.voltage10kR;
+        values["voltage_e"] = msg.voltage10kE;
+
+        values["temp_l"] = msg.tempL;
+        values["temp_r"] = msg.tempR;
+        values["temp_e"] = msg.tempE;
+
+        values["raw_l"] = msg.rawL;
+        values["raw_r"] = msg.rawR;
+        values["raw_e"] = msg.rawE;
+
+        break;
+
+      /// PRESSURE + TEMPERATURE SENSOR (MS8607)
+      case "pat":   // <---- THIS WAS MISSING
+        final msg = protos.PTData.fromBuffer(payload);
+
+        values["temperature"] = msg.temperature;
+        values["pressure"] = msg.pressure;
+
+        break;
+
+      /// OPTIONAL PPG SENSOR
+      case "ppg":
+        final msg = protos.PPGData.fromBuffer(payload);
+
+        values["led_1"] = msg.ledData.led1;
+        values["led_2"] = msg.ledData.led2;
+        values["led_3"] = msg.ledData.led3;
+
+        if (msg.hasTemperatureData()) {
+          values["temperature"] = msg.temperatureData.temperature;
         }
-      }
-      // else skip non-aligned blobs
-    });
-    return out;
+
+        break;
+
+      default:
+        // Unknown sensor type
+        break;
+    }
+
+    return SensorPacket(
+      pacifierId: pacifierId,
+      sensorType: sensorType,
+      sensorGroup: group,
+      values: values,
+    );
   }
 }
-
 
 ================================================================================
 FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\server.dart
@@ -1421,22 +1478,29 @@ import 'sensor_packet.dart';
 class SensorDeserializer {
 
   static SensorPacket parse(
-      String topic,
-      List<int> payload,
-      ) {
+    String topic,
+    List<int> payload,
+  ) {
 
     final parts = topic.split('/');
 
-    final pacifierId = parts.length > 1 ? parts[1] : "0";
+    final rawPacifier = parts.length > 1 ? parts[1] : "0";
+
+    final pacifierId = rawPacifier.contains('_')
+        ? rawPacifier.split('_').last
+        : rawPacifier;
+
     final sensorType = parts.length > 2 ? parts[2] : "unknown";
 
-    final group = parts.length > 0 ? parts[0] : "backend";
+    final group = parts.isNotEmpty ? parts[0] : "backend";
 
     final values = <String, num>{};
 
     switch (sensorType) {
 
+      /// IMU SENSOR
       case "imu":
+
         final msg = protos.IMUData.fromBuffer(payload);
 
         values["temperature"] = msg.temperature;
@@ -1451,12 +1515,18 @@ class SensorDeserializer {
 
         break;
 
+      /// AIRFLOW SENSOR
       case "airflow":
+
         final msg = protos.AIRFLOWData.fromBuffer(payload);
 
         values["voltage_l"] = msg.voltage10kL;
         values["voltage_r"] = msg.voltage10kR;
         values["voltage_e"] = msg.voltage10kE;
+
+        values["raw_l"] = msg.rawL;
+        values["raw_r"] = msg.rawR;
+        values["raw_e"] = msg.rawE;
 
         values["temp_l"] = msg.tempL;
         values["temp_r"] = msg.tempR;
@@ -1464,7 +1534,9 @@ class SensorDeserializer {
 
         break;
 
-      case "pt":
+      /// PRESSURE + TEMPERATURE SENSOR
+      case "pat":
+
         final msg = protos.PTData.fromBuffer(payload);
 
         values["temperature"] = msg.temperature;

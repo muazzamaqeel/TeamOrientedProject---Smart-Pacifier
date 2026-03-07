@@ -4,22 +4,29 @@ import 'sensor_packet.dart';
 class SensorDeserializer {
 
   static SensorPacket parse(
-      String topic,
-      List<int> payload,
-      ) {
+    String topic,
+    List<int> payload,
+  ) {
 
     final parts = topic.split('/');
 
-    final pacifierId = parts.length > 1 ? parts[1] : "0";
+    final rawPacifier = parts.length > 1 ? parts[1] : "0";
+
+    final pacifierId = rawPacifier.contains('_')
+        ? rawPacifier.split('_').last
+        : rawPacifier;
+
     final sensorType = parts.length > 2 ? parts[2] : "unknown";
 
-    final group = parts.length > 0 ? parts[0] : "backend";
+    final group = parts.isNotEmpty ? parts[0] : "backend";
 
     final values = <String, num>{};
 
     switch (sensorType) {
 
+      /// IMU SENSOR
       case "imu":
+
         final msg = protos.IMUData.fromBuffer(payload);
 
         values["temperature"] = msg.temperature;
@@ -34,12 +41,18 @@ class SensorDeserializer {
 
         break;
 
+      /// AIRFLOW SENSOR
       case "airflow":
+
         final msg = protos.AIRFLOWData.fromBuffer(payload);
 
         values["voltage_l"] = msg.voltage10kL;
         values["voltage_r"] = msg.voltage10kR;
         values["voltage_e"] = msg.voltage10kE;
+
+        values["raw_l"] = msg.rawL;
+        values["raw_r"] = msg.rawR;
+        values["raw_e"] = msg.rawE;
 
         values["temp_l"] = msg.tempL;
         values["temp_r"] = msg.tempR;
@@ -47,7 +60,9 @@ class SensorDeserializer {
 
         break;
 
-      case "pt":
+      /// PRESSURE + TEMPERATURE SENSOR
+      case "pat":
+
         final msg = protos.PTData.fromBuffer(payload);
 
         values["temperature"] = msg.temperature;
