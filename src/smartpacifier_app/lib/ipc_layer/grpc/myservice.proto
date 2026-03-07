@@ -1,14 +1,12 @@
 syntax = "proto3";
+
 package myservice;
 
 import "google/protobuf/empty.proto";
 import "sensor_data.proto";
 
 service MyService {
-  // Client (C++) will stream PayloadMessage → server (Flutter) and get back Empty when done
-  rpc PublishSensorData(stream PayloadMessage) returns (google.protobuf.Empty);
-}
-
-message PayloadMessage {
-  Protos.SensorData sensor_data = 1;
+  rpc PublishIMU(stream Protos.IMUData) returns (google.protobuf.Empty);
+  rpc PublishPT(stream Protos.PTData) returns (google.protobuf.Empty);
+  rpc PublishAirflow(stream Protos.AIRFLOWData) returns (google.protobuf.Empty);
 }

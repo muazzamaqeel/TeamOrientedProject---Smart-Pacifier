@@ -8,13 +8,3 @@
 import 'dart:core' as $core;
 import 'dart:convert' as $convert;
 import 'dart:typed_data' as $typed_data;
-@$core.Deprecated('Use payloadMessageDescriptor instead')
-const PayloadMessage$json = const {
-  '1': 'PayloadMessage',
-  '2': const [
-    const {'1': 'sensor_data', '3': 1, '4': 1, '5': 11, '6': '.Protos.SensorData', '10': 'sensorData'},
-  ],
-};
-
-/// Descriptor for `PayloadMessage`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List payloadMessageDescriptor = $convert.base64Decode('Cg5QYXlsb2FkTWVzc2FnZRIzCgtzZW5zb3JfZGF0YRgBIAEoCzISLlByb3Rvcy5TZW5zb3JEYXRhUgpzZW5zb3JEYXRh');

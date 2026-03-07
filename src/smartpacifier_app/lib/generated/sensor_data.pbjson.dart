@@ -8,86 +8,38 @@
 import 'dart:core' as $core;
 import 'dart:convert' as $convert;
 import 'dart:typed_data' as $typed_data;
-@$core.Deprecated('Use sensorDataDescriptor instead')
-const SensorData$json = const {
-  '1': 'SensorData',
-  '2': const [
-    const {'1': 'pacifier_id', '3': 1, '4': 1, '5': 9, '10': 'pacifierId'},
-    const {'1': 'sensor_type', '3': 2, '4': 1, '5': 9, '10': 'sensorType'},
-    const {'1': 'sensor_group', '3': 3, '4': 1, '5': 9, '10': 'sensorGroup'},
-    const {'1': 'data_map', '3': 4, '4': 3, '5': 11, '6': '.Protos.SensorData.DataMapEntry', '10': 'dataMap'},
-  ],
-  '3': const [SensorData_DataMapEntry$json],
-};
-
-@$core.Deprecated('Use sensorDataDescriptor instead')
-const SensorData_DataMapEntry$json = const {
-  '1': 'DataMapEntry',
-  '2': const [
-    const {'1': 'key', '3': 1, '4': 1, '5': 9, '10': 'key'},
-    const {'1': 'value', '3': 2, '4': 1, '5': 12, '10': 'value'},
-  ],
-  '7': const {'7': true},
-};
-
-/// Descriptor for `SensorData`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List sensorDataDescriptor = $convert.base64Decode('CgpTZW5zb3JEYXRhEh8KC3BhY2lmaWVyX2lkGAEgASgJUgpwYWNpZmllcklkEh8KC3NlbnNvcl90eXBlGAIgASgJUgpzZW5zb3JUeXBlEiEKDHNlbnNvcl9ncm91cBgDIAEoCVILc2Vuc29yR3JvdXASOgoIZGF0YV9tYXAYBCADKAsyHy5Qcm90b3MuU2Vuc29yRGF0YS5EYXRhTWFwRW50cnlSB2RhdGFNYXAaOgoMRGF0YU1hcEVudHJ5EhAKA2tleRgBIAEoCVIDa2V5EhQKBXZhbHVlGAIgASgMUgV2YWx1ZToCOAE=');
 @$core.Deprecated('Use iMUDataDescriptor instead')
 const IMUData$json = const {
   '1': 'IMUData',
   '2': const [
-    const {'1': 'gyros', '3': 1, '4': 3, '5': 11, '6': '.Protos.IMUData.gyro', '10': 'gyros'},
-    const {'1': 'mags', '3': 2, '4': 3, '5': 11, '6': '.Protos.IMUData.mag', '10': 'mags'},
-    const {'1': 'accs', '3': 3, '4': 3, '5': 11, '6': '.Protos.IMUData.acc', '10': 'accs'},
+    const {'1': 'temperature', '3': 1, '4': 1, '5': 2, '10': 'temperature'},
+    const {'1': 'acc', '3': 2, '4': 1, '5': 11, '6': '.Protos.IMUData.MotionVector', '10': 'acc'},
+    const {'1': 'gyro', '3': 3, '4': 1, '5': 11, '6': '.Protos.IMUData.MotionVector', '10': 'gyro'},
   ],
-  '3': const [IMUData_gyro$json, IMUData_mag$json, IMUData_acc$json],
+  '3': const [IMUData_MotionVector$json],
 };
 
 @$core.Deprecated('Use iMUDataDescriptor instead')
-const IMUData_gyro$json = const {
-  '1': 'gyro',
+const IMUData_MotionVector$json = const {
+  '1': 'MotionVector',
   '2': const [
-    const {'1': 'gyro_x', '3': 1, '4': 1, '5': 2, '10': 'gyroX'},
-    const {'1': 'gyro_y', '3': 2, '4': 1, '5': 2, '10': 'gyroY'},
-    const {'1': 'gyro_z', '3': 3, '4': 1, '5': 2, '10': 'gyroZ'},
-  ],
-};
-
-@$core.Deprecated('Use iMUDataDescriptor instead')
-const IMUData_mag$json = const {
-  '1': 'mag',
-  '2': const [
-    const {'1': 'mag_x', '3': 1, '4': 1, '5': 2, '10': 'magX'},
-    const {'1': 'mag_y', '3': 2, '4': 1, '5': 2, '10': 'magY'},
-    const {'1': 'mag_z', '3': 3, '4': 1, '5': 2, '10': 'magZ'},
-  ],
-};
-
-@$core.Deprecated('Use iMUDataDescriptor instead')
-const IMUData_acc$json = const {
-  '1': 'acc',
-  '2': const [
-    const {'1': 'acc_x', '3': 1, '4': 1, '5': 2, '10': 'accX'},
-    const {'1': 'acc_y', '3': 2, '4': 1, '5': 2, '10': 'accY'},
-    const {'1': 'acc_z', '3': 3, '4': 1, '5': 2, '10': 'accZ'},
+    const {'1': 'x', '3': 1, '4': 1, '5': 2, '10': 'x'},
+    const {'1': 'y', '3': 2, '4': 1, '5': 2, '10': 'y'},
+    const {'1': 'z', '3': 3, '4': 1, '5': 2, '10': 'z'},
   ],
 };
 
 /// Descriptor for `IMUData`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List iMUDataDescriptor = $convert.base64Decode('CgdJTVVEYXRhEioKBWd5cm9zGAEgAygLMhQuUHJvdG9zLklNVURhdGEuZ3lyb1IFZ3lyb3MSJwoEbWFncxgCIAMoCzITLlByb3Rvcy5JTVVEYXRhLm1hZ1IEbWFncxInCgRhY2NzGAMgAygLMhMuUHJvdG9zLklNVURhdGEuYWNjUgRhY2NzGksKBGd5cm8SFQoGZ3lyb194GAEgASgCUgVneXJvWBIVCgZneXJvX3kYAiABKAJSBWd5cm9ZEhUKBmd5cm9fehgDIAEoAlIFZ3lyb1oaRAoDbWFnEhMKBW1hZ194GAEgASgCUgRtYWdYEhMKBW1hZ195GAIgASgCUgRtYWdZEhMKBW1hZ196GAMgASgCUgRtYWdaGkQKA2FjYxITCgVhY2NfeBgBIAEoAlIEYWNjWBITCgVhY2NfeRgCIAEoAlIEYWNjWRITCgVhY2NfehgDIAEoAlIEYWNjWg==');
+final $typed_data.Uint8List iMUDataDescriptor = $convert.base64Decode('CgdJTVVEYXRhEiAKC3RlbXBlcmF0dXJlGAEgASgCUgt0ZW1wZXJhdHVyZRIuCgNhY2MYAiABKAsyHC5Qcm90b3MuSU1VRGF0YS5Nb3Rpb25WZWN0b3JSA2FjYxIwCgRneXJvGAMgASgLMhwuUHJvdG9zLklNVURhdGEuTW90aW9uVmVjdG9yUgRneXJvGjgKDE1vdGlvblZlY3RvchIMCgF4GAEgASgCUgF4EgwKAXkYAiABKAJSAXkSDAoBehgDIAEoAlIBeg==');
 @$core.Deprecated('Use pPGDataDescriptor instead')
 const PPGData$json = const {
   '1': 'PPGData',
-  '2': const [
-    const {'1': 'leds', '3': 1, '4': 3, '5': 11, '6': '.Protos.PPGData.led', '10': 'leds'},
-    const {'1': 'temperatures', '3': 2, '4': 3, '5': 11, '6': '.Protos.PPGData.temperature', '10': 'temperatures'},
-  ],
-  '3': const [PPGData_led$json, PPGData_temperature$json],
+  '3': const [PPGData_LedData$json, PPGData_TemperatureData$json],
 };
 
 @$core.Deprecated('Use pPGDataDescriptor instead')
-const PPGData_led$json = const {
-  '1': 'led',
+const PPGData_LedData$json = const {
+  '1': 'LedData',
   '2': const [
     const {'1': 'led_1', '3': 1, '4': 1, '5': 5, '10': 'led1'},
     const {'1': 'led_2', '3': 2, '4': 1, '5': 5, '10': 'led2'},
@@ -96,12 +48,58 @@ const PPGData_led$json = const {
 };
 
 @$core.Deprecated('Use pPGDataDescriptor instead')
-const PPGData_temperature$json = const {
-  '1': 'temperature',
+const PPGData_TemperatureData$json = const {
+  '1': 'TemperatureData',
   '2': const [
-    const {'1': 'temperature_1', '3': 1, '4': 1, '5': 2, '10': 'temperature1'},
+    const {'1': 'temperature', '3': 1, '4': 1, '5': 2, '10': 'temperature'},
   ],
 };
 
 /// Descriptor for `PPGData`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List pPGDataDescriptor = $convert.base64Decode('CgdQUEdEYXRhEicKBGxlZHMYASADKAsyEy5Qcm90b3MuUFBHRGF0YS5sZWRSBGxlZHMSPwoMdGVtcGVyYXR1cmVzGAIgAygLMhsuUHJvdG9zLlBQR0RhdGEudGVtcGVyYXR1cmVSDHRlbXBlcmF0dXJlcxpECgNsZWQSEwoFbGVkXzEYASABKAVSBGxlZDESEwoFbGVkXzIYAiABKAVSBGxlZDISEwoFbGVkXzMYAyABKAVSBGxlZDMaMgoLdGVtcGVyYXR1cmUSIwoNdGVtcGVyYXR1cmVfMRgBIAEoAlIMdGVtcGVyYXR1cmUx');
+final $typed_data.Uint8List pPGDataDescriptor = $convert.base64Decode('CgdQUEdEYXRhGkgKB0xlZERhdGESEwoFbGVkXzEYASABKAVSBGxlZDESEwoFbGVkXzIYAiABKAVSBGxlZDISEwoFbGVkXzMYAyABKAVSBGxlZDMaMwoPVGVtcGVyYXR1cmVEYXRhEiAKC3RlbXBlcmF0dXJlGAEgASgCUgt0ZW1wZXJhdHVyZQ==');
+@$core.Deprecated('Use aIRFLOWDataDescriptor instead')
+const AIRFLOWData$json = const {
+  '1': 'AIRFLOWData',
+  '2': const [
+    const {'1': 'voltage10k_l', '3': 1, '4': 1, '5': 5, '10': 'voltage10kL'},
+    const {'1': 'voltage10k_r', '3': 2, '4': 1, '5': 5, '10': 'voltage10kR'},
+    const {'1': 'voltage10k_e', '3': 3, '4': 1, '5': 5, '10': 'voltage10kE'},
+    const {'1': 'raw_l', '3': 4, '4': 1, '5': 13, '10': 'rawL'},
+    const {'1': 'raw_r', '3': 5, '4': 1, '5': 13, '10': 'rawR'},
+    const {'1': 'raw_e', '3': 6, '4': 1, '5': 13, '10': 'rawE'},
+    const {'1': 'temp_l', '3': 7, '4': 1, '5': 2, '10': 'tempL'},
+    const {'1': 'temp_r', '3': 8, '4': 1, '5': 2, '10': 'tempR'},
+    const {'1': 'temp_e', '3': 9, '4': 1, '5': 2, '10': 'tempE'},
+  ],
+};
+
+/// Descriptor for `AIRFLOWData`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List aIRFLOWDataDescriptor = $convert.base64Decode('CgtBSVJGTE9XRGF0YRIhCgx2b2x0YWdlMTBrX2wYASABKAVSC3ZvbHRhZ2UxMGtMEiEKDHZvbHRhZ2UxMGtfchgCIAEoBVILdm9sdGFnZTEwa1ISIQoMdm9sdGFnZTEwa19lGAMgASgFUgt2b2x0YWdlMTBrRRITCgVyYXdfbBgEIAEoDVIEcmF3TBITCgVyYXdfchgFIAEoDVIEcmF3UhITCgVyYXdfZRgGIAEoDVIEcmF3RRIVCgZ0ZW1wX2wYByABKAJSBXRlbXBMEhUKBnRlbXBfchgIIAEoAlIFdGVtcFISFQoGdGVtcF9lGAkgASgCUgV0ZW1wRQ==');
+@$core.Deprecated('Use tEMPERATUREDataDescriptor instead')
+const TEMPERATUREData$json = const {
+  '1': 'TEMPERATUREData',
+  '3': const [TEMPERATUREData_VoltageData$json],
+};
+
+@$core.Deprecated('Use tEMPERATUREDataDescriptor instead')
+const TEMPERATUREData_VoltageData$json = const {
+  '1': 'VoltageData',
+  '2': const [
+    const {'1': 'voltage10k', '3': 1, '4': 1, '5': 5, '10': 'voltage10k'},
+    const {'1': 'voltage1k', '3': 2, '4': 1, '5': 5, '10': 'voltage1k'},
+  ],
+};
+
+/// Descriptor for `TEMPERATUREData`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List tEMPERATUREDataDescriptor = $convert.base64Decode('Cg9URU1QRVJBVFVSRURhdGEaSwoLVm9sdGFnZURhdGESHgoKdm9sdGFnZTEwaxgBIAEoBVIKdm9sdGFnZTEwaxIcCgl2b2x0YWdlMWsYAiABKAVSCXZvbHRhZ2Uxaw==');
+@$core.Deprecated('Use pTDataDescriptor instead')
+const PTData$json = const {
+  '1': 'PTData',
+  '2': const [
+    const {'1': 'temperature', '3': 1, '4': 1, '5': 2, '10': 'temperature'},
+    const {'1': 'pressure', '3': 2, '4': 1, '5': 2, '10': 'pressure'},
+  ],
+};
+
+/// Descriptor for `PTData`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List pTDataDescriptor = $convert.base64Decode('CgZQVERhdGESIAoLdGVtcGVyYXR1cmUYASABKAJSC3RlbXBlcmF0dXJlEhoKCHByZXNzdXJlGAIgASgCUghwcmVzc3VyZQ==');

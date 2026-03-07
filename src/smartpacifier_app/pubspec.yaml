@@ -17,6 +17,10 @@ dependencies:
   protobuf: ^4.0.0
   protobuf_google: ^1.0.0
   yaml: ^3.1.0
+  
+  #mqtt
+  mqtt_client: ^10.2.0
+
 
   # Flutter SDK itself
   flutter:

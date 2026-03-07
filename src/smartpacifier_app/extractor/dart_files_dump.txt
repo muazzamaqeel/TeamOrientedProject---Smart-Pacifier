@@ -1,0 +1,2956 @@
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\fl_chart_patch.dart
+================================================================================
+import 'package:flutter/widgets.dart';
+
+/// Fl_Chart up through 0.60.0 still calls
+///   MediaQuery.boldTextOverride(context)
+/// which was removed in Flutter 3.7+.  We restore it here as a no-op.
+extension MediaQueryPatch on MediaQuery {
+  static bool get boldTextOverride => false;
+}
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\main.dart
+================================================================================
+import 'package:flutter/material.dart';
+import 'ipc_layer/mqtt/mqtt_service.dart';
+import 'components/theme/lighttheme.dart';
+import 'components/theme/darktheme.dart';
+import 'components/sidebar/app_shell.dart';
+import 'screens/settings/configuration/configextractor.dart';
+
+void main() async {
+
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await ConfigExtractor.init();
+
+  await mqttService.connect();
+
+  runApp(const MyApp());
+
+}
+
+class MyApp extends StatefulWidget {
+
+  const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+
+}
+
+class _MyAppState extends State<MyApp> {
+
+  bool _isDark = true;
+
+  void _toggleTheme(bool isDark) {
+
+    setState(() => _isDark = isDark);
+
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    return MaterialApp(
+
+      title: 'SmartPacifier App',
+
+      theme: _isDark ? darkTheme : lightTheme,
+
+      home: AppShell(
+        isDark: _isDark,
+        onThemeChanged: _toggleTheme,
+      ),
+
+    );
+  }
+}
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\client_layer\connector.dart
+================================================================================
+import 'dart:async';
+
+import '../ipc_layer/mqtt/mqtt_service.dart';
+import '../ipc_layer/mqtt/sensor_packet.dart';
+
+class Connector {
+
+  Connector._internal() {
+    _initDetection();
+  }
+
+  static final Connector _instance = Connector._internal();
+
+  factory Connector() => _instance;
+
+  final Set<String> _clients = {};
+
+  final _ctrl = StreamController<List<String>>.broadcast();
+
+  Stream<List<String>> get clientsStream => _ctrl.stream;
+
+  List<String> get clients => List.unmodifiable(_clients);
+
+  void _initDetection() {
+
+    mqttService.stream.listen((packet) {
+
+      final backend = packet.sensorGroup;
+
+      if (backend.isNotEmpty) {
+        addClient(backend);
+      }
+    });
+  }
+
+  void addClient(String name) {
+
+    if (_clients.add(name)) {
+
+      _ctrl.add(_clients.toList());
+    }
+  }
+
+  Stream<SensorPacket> dataStreamFor(String clientId) {
+
+    return mqttService.stream.where((sd) {
+
+      return sd.sensorGroup == clientId;
+    });
+  }
+}
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sidebar\app_shell.dart
+================================================================================
+import 'package:flutter/material.dart';
+import 'package:smartpacifier_app/client_layer/connector.dart';
+import 'package:smartpacifier_app/components/sidebar/sidebar.dart';
+import 'package:smartpacifier_app/screens/active_monitoring/activemonitoring.dart';
+import 'package:smartpacifier_app/screens/campaign_monitoring/campaigncreation.dart';
+import 'package:smartpacifier_app/screens/historic_data/historicdata.dart';
+import 'package:smartpacifier_app/screens/settings/settings.dart';
+
+class AppShell extends StatefulWidget {
+  final bool isDark;
+  final ValueChanged<bool> onThemeChanged;
+
+  const AppShell({
+    Key? key,
+    required this.isDark,
+    required this.onThemeChanged,
+  }) : super(key: key);
+
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  final Connector _connector = Connector();
+  List<String> _clients = [];
+  String? _selectedClient;
+  SidebarItem _selectedItem = SidebarItem.activeMonitoring;
+  bool _railExtended = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _connector.clientsStream.listen((list) {
+      setState(() {
+        _clients = list;
+        _selectedClient ??= list.isNotEmpty ? list.first : null;
+      });
+    });
+  }
+
+  Widget _buildContent() {
+    if (_selectedItem == SidebarItem.historicData) {
+      return const HistoricData();
+    }
+    if (_selectedClient == null) {
+      return const Center(child: Text('No backend selected'));
+    }
+    switch (_selectedItem) {
+      case SidebarItem.activeMonitoring:
+        return ActiveMonitoring(backend: _selectedClient!);
+      case SidebarItem.campaignCreation:
+        return CampaignCreation(backend: _selectedClient!);
+      case SidebarItem.historicData:
+      // handled above
+        return const SizedBox();
+      case SidebarItem.settings:
+        return Settings(
+          backend: _selectedClient!,
+          isDark: widget.isDark,
+          onThemeChanged: widget.onThemeChanged,
+        );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          Sidebar(
+            clients: _clients,
+            selectedClient: _selectedClient,
+            onClientSelected: (c) => setState(() {
+              _selectedClient = c;
+              _selectedItem = SidebarItem.activeMonitoring;
+            }),
+            selectedItem: _selectedItem,
+            onItemSelected: (s) => setState(() => _selectedItem = s),
+            isExtended: _railExtended,
+            onToggle: () => setState(() => _railExtended = !_railExtended),
+          ),
+          Expanded(child: _buildContent()),
+        ],
+      ),
+    );
+  }
+}
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sidebar\sidebar.dart
+================================================================================
+import 'package:flutter/material.dart';
+import '../../screens/active_monitoring/activemonitoring.dart';
+import '../../screens/campaign_monitoring/campaigncreation.dart';
+import 'package:smartpacifier_app/screens/historic_data/historicdata.dart';
+import '../../screens/settings/settings.dart';
+
+enum SidebarItem { activeMonitoring, campaignCreation, historicData, settings }
+
+class Sidebar extends StatelessWidget {
+  final List<String> clients;
+  final String? selectedClient;
+  final ValueChanged<String> onClientSelected;
+  final SidebarItem selectedItem;
+  final ValueChanged<SidebarItem> onItemSelected;
+  final bool isExtended;
+  final VoidCallback onToggle;
+
+  const Sidebar({
+    super.key,
+    required this.clients,
+    required this.selectedClient,
+    required this.onClientSelected,
+    required this.selectedItem,
+    required this.onItemSelected,
+    required this.isExtended,
+    required this.onToggle,
+  });
+
+  Widget _tile({
+    required IconData icon,
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) =>
+      InkWell(
+        onTap: onTap,
+        child: Container(
+          color: selected ? Colors.grey.withOpacity(0.2) : null,
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          child: Row(
+            children: [
+              Icon(icon),
+              if (isExtended) ...[
+                const SizedBox(width: 12),
+                Expanded(child: Text(label)),
+              ],
+            ],
+          ),
+        ),
+      );
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: isExtended ? 200 : 60,
+      color: Theme.of(context).colorScheme.surfaceVariant,
+      child: Column(
+        children: [
+          IconButton(
+            icon: Icon(isExtended ? Icons.chevron_left : Icons.menu),
+            onPressed: onToggle,
+          ),
+          if (isExtended)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Text(
+                'Connected Clients',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ),
+          Expanded(
+            child: ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                for (var c in clients)
+                  _tile(
+                    icon: Icons.cloud_outlined,
+                    label: c,
+                    selected: c == selectedClient,
+                    onTap: () => onClientSelected(c),
+                  ),
+                if (clients.isNotEmpty) const Divider(),
+                _tile(
+                  icon: Icons.show_chart_outlined,
+                  label: 'Active Monitoring',
+                  selected: selectedItem == SidebarItem.activeMonitoring,
+                  onTap: () => onItemSelected(SidebarItem.activeMonitoring),
+                ),
+                _tile(
+                  icon: Icons.campaign_outlined,
+                  label: 'Create Campaign',
+                  selected: selectedItem == SidebarItem.campaignCreation,
+                  onTap: () => onItemSelected(SidebarItem.campaignCreation),
+                ),
+                const Divider(), // separate Historic Data
+                _tile(
+                  icon: Icons.history,
+                  label: 'Historic Data',
+                  selected: selectedItem == SidebarItem.historicData,
+                  onTap: () => onItemSelected(SidebarItem.historicData),
+                ),
+                const Divider(), // then Settings
+                _tile(
+                  icon: Icons.settings_outlined,
+                  label: 'Settings',
+                  selected: selectedItem == SidebarItem.settings,
+                  onTap: () => onItemSelected(SidebarItem.settings),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\theme\darktheme.dart
+================================================================================
+// components/theme/darktheme.dart
+
+import 'package:flutter/material.dart';
+
+final ThemeData darkTheme = ThemeData(
+  brightness: Brightness.dark,
+  primarySwatch: Colors.blue,
+  scaffoldBackgroundColor: Colors.grey.shade900,
+  appBarTheme: AppBarTheme(
+    backgroundColor: Colors.grey.shade900,
+    foregroundColor: Colors.white,
+    elevation: 0,
+  ),
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      foregroundColor: Colors.black,
+      backgroundColor: Colors.teal,
+    ),
+  ),
+  // colorScheme: ColorScheme.dark(primary: Colors.teal, secondary: Colors.orange),
+);
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\theme\lighttheme.dart
+================================================================================
+import 'package:flutter/material.dart';
+
+final ThemeData lightTheme = ThemeData(
+  brightness: Brightness.light,
+  primarySwatch: Colors.blue,
+  scaffoldBackgroundColor: Colors.white,
+  appBarTheme: const AppBarTheme(
+    backgroundColor: Colors.blue,
+    foregroundColor: Colors.white,
+  ),
+  // customize buttons, cards, etc.
+  elevatedButtonTheme: ElevatedButtonThemeData(
+    style: ElevatedButton.styleFrom(
+      foregroundColor: Colors.white, backgroundColor: Colors.blue,
+    ),
+  ),
+  // you can also define chart colors here, e.g.:
+  // colorScheme: ColorScheme.light(primary: Colors.blue, secondary: Colors.teal),
+);
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\myservice.pb.dart
+================================================================================
+(generated file – content skipped) myservice.pb.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\myservice.pbenum.dart
+================================================================================
+(generated file – content skipped) myservice.pbenum.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\myservice.pbgrpc.dart
+================================================================================
+(generated file – content skipped) myservice.pbgrpc.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\myservice.pbjson.dart
+================================================================================
+(generated file – content skipped) myservice.pbjson.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\sensor_data.pb.dart
+================================================================================
+(generated file – content skipped) sensor_data.pb.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\sensor_data.pbenum.dart
+================================================================================
+(generated file – content skipped) sensor_data.pbenum.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\sensor_data.pbjson.dart
+================================================================================
+(generated file – content skipped) sensor_data.pbjson.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\google\protobuf\empty.pb.dart
+================================================================================
+(generated file – content skipped) empty.pb.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\google\protobuf\empty.pbenum.dart
+================================================================================
+(generated file – content skipped) empty.pbenum.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\google\protobuf\empty.pbjson.dart
+================================================================================
+(generated file – content skipped) empty.pbjson.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\google\protobuf\wrappers.pb.dart
+================================================================================
+(generated file – content skipped) wrappers.pb.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\google\protobuf\wrappers.pbenum.dart
+================================================================================
+(generated file – content skipped) wrappers.pbenum.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\generated\google\protobuf\wrappers.pbjson.dart
+================================================================================
+(generated file – content skipped) wrappers.pbjson.dart
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\deserialization.dart
+================================================================================
+import 'dart:typed_data';
+import '../../generated/sensor_data.pb.dart' as protos;
+
+/// Given a fully-flattened SensorData.dataMap, decode every 4-byte entry
+/// into a num (float if finite, otherwise int), and automatically handle
+/// any repeated/unnamed indices by appending “_0”, “_1”, etc.
+class DataDeserializer {
+  static Map<String, num> parsePayload(protos.SensorData sd) {
+    final out = <String, num>{};
+    sd.dataMap.forEach((key, raw) {
+      final bytes = raw is Uint8List ? raw : Uint8List.fromList(raw);
+      final bd = ByteData.sublistView(bytes);
+
+      // If exactly 4 bytes: single scalar
+      if (bytes.length == 4) {
+        final f = bd.getFloat32(0, Endian.little);
+        out[key] = f.isFinite ? f : bd.getInt32(0, Endian.little);
+      }
+      // If N×4 bytes: N‐length array of scalars
+      else if (bytes.length % 4 == 0) {
+        final count = bytes.length ~/ 4;
+        for (var i = 0; i < count; i++) {
+          final f = bd.getFloat32(4 * i, Endian.little);
+          final v = f.isFinite ? f : bd.getInt32(4 * i, Endian.little);
+          out['${key}_$i'] = v.toDouble();
+        }
+      }
+      // else skip non-aligned blobs
+    });
+    return out;
+  }
+}
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\server.dart
+================================================================================
+// File: ipc_layer/grpc/server.dart
+
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:grpc/grpc.dart';
+import 'package:smartpacifier_app/generated/myservice.pbgrpc.dart';
+import 'package:smartpacifier_app/generated/google/protobuf/empty.pb.dart';
+
+class MyServiceImpl extends MyServiceBase {
+  /// Broadcast controller in synchronous mode: delivers each add() immediately.
+  final _controller = StreamController<PayloadMessage>.broadcast(sync: true);
+
+  @override
+  Future<Empty> publishSensorData(
+      ServiceCall call,
+      Stream<PayloadMessage> request,
+      ) async {
+    // Extract backend identifier from metadata
+    final backendName = call.clientMetadata?['backend-name'] ?? 'unknown_backend';
+    debugPrint('publishSensorData() started for $backendName');
+
+    await for (final msg in request) {
+      // Tag the payload with its source
+      msg.sensorData.sensorGroup = backendName;
+
+      // Log the deserialized payload with actual values
+      final timestamp = DateTime.now().toIso8601String();
+      debugPrint(
+        '[$timestamp] '
+            '[$backendName] '
+            'pacifier=${msg.sensorData.pacifierId}, '
+            'type=${msg.sensorData.sensorType}, '
+            'group=${msg.sensorData.sensorGroup}, '
+            'data=${msg.sensorData.dataMap}',
+      );
+
+      // Forward immediately to Flutter listeners
+      _controller.add(msg);
+    }
+
+    debugPrint('publishSensorData() completed for $backendName');
+    return Empty();
+  }
+
+  @override
+  Stream<PayloadMessage> get onSensorData => _controller.stream;
+}
+
+/// Shared instance for Connector to import
+final myService = MyServiceImpl();
+
+/// Starts the gRPC server on [port] (default: 50051)
+Future<void> startGrpcServer({int port = 50051}) async {
+  final server = await Server.create(
+    services: [myService],
+    codecRegistry: CodecRegistry(codecs: [GzipCodec(), IdentityCodec()]),
+  );
+  await server.serve(port: port);
+  debugPrint('gRPC server listening on port \$port');
+}
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pb.dart
+================================================================================
+//
+//  Generated code. Do not modify.
+//  source: google/protobuf/empty.proto
+//
+// @dart = 2.12
+
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+
+import 'dart:core' as $core;
+
+import 'package:protobuf/protobuf.dart' as $pb;
+
+///  A generic empty message that you can re-use to avoid defining duplicated
+///  empty messages in your APIs. A typical example is to use it as the request
+///  or the response type of an API method. For instance:
+///
+///      service Foo {
+///        rpc Bar(google.protobuf.Empty) returns (google.protobuf.Empty);
+///      }
+class Empty extends $pb.GeneratedMessage {
+  factory Empty() => create();
+  Empty._() : super();
+  factory Empty.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory Empty.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Empty', package: const $pb.PackageName(_omitMessageNames ? '' : 'google.protobuf'), createEmptyInstance: create)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  Empty clone() => Empty()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  Empty copyWith(void Function(Empty) updates) => super.copyWith((message) => updates(message as Empty)) as Empty;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static Empty create() => Empty._();
+  Empty createEmptyInstance() => create();
+  static $pb.PbList<Empty> createRepeated() => $pb.PbList<Empty>();
+  @$core.pragma('dart2js:noInline')
+  static Empty getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Empty>(create);
+  static Empty? _defaultInstance;
+}
+
+
+const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pbenum.dart
+================================================================================
+//
+//  Generated code. Do not modify.
+//  source: google/protobuf/empty.proto
+//
+// @dart = 2.12
+
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pbjson.dart
+================================================================================
+//
+//  Generated code. Do not modify.
+//  source: google/protobuf/empty.proto
+//
+// @dart = 2.12
+
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+
+import 'dart:convert' as $convert;
+import 'dart:core' as $core;
+import 'dart:typed_data' as $typed_data;
+
+@$core.Deprecated('Use emptyDescriptor instead')
+const Empty$json = {
+  '1': 'Empty',
+};
+
+/// Descriptor for `Empty`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List emptyDescriptor = $convert.base64Decode(
+    'CgVFbXB0eQ==');
+
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pb.dart
+================================================================================
+//
+//  Generated code. Do not modify.
+//  source: google/protobuf/wrappers.proto
+//
+// @dart = 2.12
+
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+
+import 'dart:core' as $core;
+
+import 'package:fixnum/fixnum.dart' as $fixnum;
+import 'package:protobuf/protobuf.dart' as $pb;
+import 'package:protobuf/src/protobuf/mixins/well_known.dart' as $mixin;
+
+///  Wrapper message for `double`.
+///
+///  The JSON representation for `DoubleValue` is JSON number.
+///
+///  Not recommended for use in new APIs, but still useful for legacy APIs and
+///  has no plan to be removed.
+class DoubleValue extends $pb.GeneratedMessage with $mixin.DoubleValueMixin {
+  factory DoubleValue({
+    $core.double? value,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    return $result;
+  }
+  DoubleValue._() : super();
+  factory DoubleValue.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory DoubleValue.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'DoubleValue', package: const $pb.PackageName(_omitMessageNames ? '' : 'google.protobuf'), createEmptyInstance: create, toProto3Json: $mixin.DoubleValueMixin.toProto3JsonHelper, fromProto3Json: $mixin.DoubleValueMixin.fromProto3JsonHelper)
+    ..a<$core.double>(1, _omitFieldNames ? '' : 'value', $pb.PbFieldType.OD)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  DoubleValue clone() => DoubleValue()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  DoubleValue copyWith(void Function(DoubleValue) updates) => super.copyWith((message) => updates(message as DoubleValue)) as DoubleValue;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static DoubleValue create() => DoubleValue._();
+  DoubleValue createEmptyInstance() => create();
+  static $pb.PbList<DoubleValue> createRepeated() => $pb.PbList<DoubleValue>();
+  @$core.pragma('dart2js:noInline')
+  static DoubleValue getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<DoubleValue>(create);
+  static DoubleValue? _defaultInstance;
+
+  /// The double value.
+  @$pb.TagNumber(1)
+  $core.double get value => $_getN(0);
+  @$pb.TagNumber(1)
+  set value($core.double v) { $_setDouble(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasValue() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearValue() => clearField(1);
+}
+
+///  Wrapper message for `float`.
+///
+///  The JSON representation for `FloatValue` is JSON number.
+///
+///  Not recommended for use in new APIs, but still useful for legacy APIs and
+///  has no plan to be removed.
+class FloatValue extends $pb.GeneratedMessage with $mixin.FloatValueMixin {
+  factory FloatValue({
+    $core.double? value,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    return $result;
+  }
+  FloatValue._() : super();
+  factory FloatValue.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory FloatValue.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'FloatValue', package: const $pb.PackageName(_omitMessageNames ? '' : 'google.protobuf'), createEmptyInstance: create, toProto3Json: $mixin.FloatValueMixin.toProto3JsonHelper, fromProto3Json: $mixin.FloatValueMixin.fromProto3JsonHelper)
+    ..a<$core.double>(1, _omitFieldNames ? '' : 'value', $pb.PbFieldType.OF)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  FloatValue clone() => FloatValue()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  FloatValue copyWith(void Function(FloatValue) updates) => super.copyWith((message) => updates(message as FloatValue)) as FloatValue;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static FloatValue create() => FloatValue._();
+  FloatValue createEmptyInstance() => create();
+  static $pb.PbList<FloatValue> createRepeated() => $pb.PbList<FloatValue>();
+  @$core.pragma('dart2js:noInline')
+  static FloatValue getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<FloatValue>(create);
+  static FloatValue? _defaultInstance;
+
+  /// The float value.
+  @$pb.TagNumber(1)
+  $core.double get value => $_getN(0);
+  @$pb.TagNumber(1)
+  set value($core.double v) { $_setFloat(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasValue() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearValue() => clearField(1);
+}
+
+///  Wrapper message for `int64`.
+///
+///  The JSON representation for `Int64Value` is JSON string.
+///
+///  Not recommended for use in new APIs, but still useful for legacy APIs and
+///  has no plan to be removed.
+class Int64Value extends $pb.GeneratedMessage with $mixin.Int64ValueMixin {
+  factory Int64Value({
+    $fixnum.Int64? value,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    return $result;
+  }
+  Int64Value._() : super();
+  factory Int64Value.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory Int64Value.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Int64Value', package: const $pb.PackageName(_omitMessageNames ? '' : 'google.protobuf'), createEmptyInstance: create, toProto3Json: $mixin.Int64ValueMixin.toProto3JsonHelper, fromProto3Json: $mixin.Int64ValueMixin.fromProto3JsonHelper)
+    ..aInt64(1, _omitFieldNames ? '' : 'value')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  Int64Value clone() => Int64Value()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  Int64Value copyWith(void Function(Int64Value) updates) => super.copyWith((message) => updates(message as Int64Value)) as Int64Value;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static Int64Value create() => Int64Value._();
+  Int64Value createEmptyInstance() => create();
+  static $pb.PbList<Int64Value> createRepeated() => $pb.PbList<Int64Value>();
+  @$core.pragma('dart2js:noInline')
+  static Int64Value getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Int64Value>(create);
+  static Int64Value? _defaultInstance;
+
+  /// The int64 value.
+  @$pb.TagNumber(1)
+  $fixnum.Int64 get value => $_getI64(0);
+  @$pb.TagNumber(1)
+  set value($fixnum.Int64 v) { $_setInt64(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasValue() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearValue() => clearField(1);
+}
+
+///  Wrapper message for `uint64`.
+///
+///  The JSON representation for `UInt64Value` is JSON string.
+///
+///  Not recommended for use in new APIs, but still useful for legacy APIs and
+///  has no plan to be removed.
+class UInt64Value extends $pb.GeneratedMessage with $mixin.UInt64ValueMixin {
+  factory UInt64Value({
+    $fixnum.Int64? value,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    return $result;
+  }
+  UInt64Value._() : super();
+  factory UInt64Value.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory UInt64Value.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UInt64Value', package: const $pb.PackageName(_omitMessageNames ? '' : 'google.protobuf'), createEmptyInstance: create, toProto3Json: $mixin.UInt64ValueMixin.toProto3JsonHelper, fromProto3Json: $mixin.UInt64ValueMixin.fromProto3JsonHelper)
+    ..a<$fixnum.Int64>(1, _omitFieldNames ? '' : 'value', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  UInt64Value clone() => UInt64Value()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  UInt64Value copyWith(void Function(UInt64Value) updates) => super.copyWith((message) => updates(message as UInt64Value)) as UInt64Value;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UInt64Value create() => UInt64Value._();
+  UInt64Value createEmptyInstance() => create();
+  static $pb.PbList<UInt64Value> createRepeated() => $pb.PbList<UInt64Value>();
+  @$core.pragma('dart2js:noInline')
+  static UInt64Value getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UInt64Value>(create);
+  static UInt64Value? _defaultInstance;
+
+  /// The uint64 value.
+  @$pb.TagNumber(1)
+  $fixnum.Int64 get value => $_getI64(0);
+  @$pb.TagNumber(1)
+  set value($fixnum.Int64 v) { $_setInt64(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasValue() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearValue() => clearField(1);
+}
+
+///  Wrapper message for `int32`.
+///
+///  The JSON representation for `Int32Value` is JSON number.
+///
+///  Not recommended for use in new APIs, but still useful for legacy APIs and
+///  has no plan to be removed.
+class Int32Value extends $pb.GeneratedMessage with $mixin.Int32ValueMixin {
+  factory Int32Value({
+    $core.int? value,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    return $result;
+  }
+  Int32Value._() : super();
+  factory Int32Value.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory Int32Value.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'Int32Value', package: const $pb.PackageName(_omitMessageNames ? '' : 'google.protobuf'), createEmptyInstance: create, toProto3Json: $mixin.Int32ValueMixin.toProto3JsonHelper, fromProto3Json: $mixin.Int32ValueMixin.fromProto3JsonHelper)
+    ..a<$core.int>(1, _omitFieldNames ? '' : 'value', $pb.PbFieldType.O3)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  Int32Value clone() => Int32Value()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  Int32Value copyWith(void Function(Int32Value) updates) => super.copyWith((message) => updates(message as Int32Value)) as Int32Value;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static Int32Value create() => Int32Value._();
+  Int32Value createEmptyInstance() => create();
+  static $pb.PbList<Int32Value> createRepeated() => $pb.PbList<Int32Value>();
+  @$core.pragma('dart2js:noInline')
+  static Int32Value getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<Int32Value>(create);
+  static Int32Value? _defaultInstance;
+
+  /// The int32 value.
+  @$pb.TagNumber(1)
+  $core.int get value => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set value($core.int v) { $_setSignedInt32(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasValue() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearValue() => clearField(1);
+}
+
+///  Wrapper message for `uint32`.
+///
+///  The JSON representation for `UInt32Value` is JSON number.
+///
+///  Not recommended for use in new APIs, but still useful for legacy APIs and
+///  has no plan to be removed.
+class UInt32Value extends $pb.GeneratedMessage with $mixin.UInt32ValueMixin {
+  factory UInt32Value({
+    $core.int? value,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    return $result;
+  }
+  UInt32Value._() : super();
+  factory UInt32Value.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory UInt32Value.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'UInt32Value', package: const $pb.PackageName(_omitMessageNames ? '' : 'google.protobuf'), createEmptyInstance: create, toProto3Json: $mixin.UInt32ValueMixin.toProto3JsonHelper, fromProto3Json: $mixin.UInt32ValueMixin.fromProto3JsonHelper)
+    ..a<$core.int>(1, _omitFieldNames ? '' : 'value', $pb.PbFieldType.OU3)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  UInt32Value clone() => UInt32Value()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  UInt32Value copyWith(void Function(UInt32Value) updates) => super.copyWith((message) => updates(message as UInt32Value)) as UInt32Value;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static UInt32Value create() => UInt32Value._();
+  UInt32Value createEmptyInstance() => create();
+  static $pb.PbList<UInt32Value> createRepeated() => $pb.PbList<UInt32Value>();
+  @$core.pragma('dart2js:noInline')
+  static UInt32Value getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<UInt32Value>(create);
+  static UInt32Value? _defaultInstance;
+
+  /// The uint32 value.
+  @$pb.TagNumber(1)
+  $core.int get value => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set value($core.int v) { $_setUnsignedInt32(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasValue() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearValue() => clearField(1);
+}
+
+///  Wrapper message for `bool`.
+///
+///  The JSON representation for `BoolValue` is JSON `true` and `false`.
+///
+///  Not recommended for use in new APIs, but still useful for legacy APIs and
+///  has no plan to be removed.
+class BoolValue extends $pb.GeneratedMessage with $mixin.BoolValueMixin {
+  factory BoolValue({
+    $core.bool? value,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    return $result;
+  }
+  BoolValue._() : super();
+  factory BoolValue.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory BoolValue.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'BoolValue', package: const $pb.PackageName(_omitMessageNames ? '' : 'google.protobuf'), createEmptyInstance: create, toProto3Json: $mixin.BoolValueMixin.toProto3JsonHelper, fromProto3Json: $mixin.BoolValueMixin.fromProto3JsonHelper)
+    ..aOB(1, _omitFieldNames ? '' : 'value')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  BoolValue clone() => BoolValue()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  BoolValue copyWith(void Function(BoolValue) updates) => super.copyWith((message) => updates(message as BoolValue)) as BoolValue;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static BoolValue create() => BoolValue._();
+  BoolValue createEmptyInstance() => create();
+  static $pb.PbList<BoolValue> createRepeated() => $pb.PbList<BoolValue>();
+  @$core.pragma('dart2js:noInline')
+  static BoolValue getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<BoolValue>(create);
+  static BoolValue? _defaultInstance;
+
+  /// The bool value.
+  @$pb.TagNumber(1)
+  $core.bool get value => $_getBF(0);
+  @$pb.TagNumber(1)
+  set value($core.bool v) { $_setBool(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasValue() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearValue() => clearField(1);
+}
+
+///  Wrapper message for `string`.
+///
+///  The JSON representation for `StringValue` is JSON string.
+///
+///  Not recommended for use in new APIs, but still useful for legacy APIs and
+///  has no plan to be removed.
+class StringValue extends $pb.GeneratedMessage with $mixin.StringValueMixin {
+  factory StringValue({
+    $core.String? value,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    return $result;
+  }
+  StringValue._() : super();
+  factory StringValue.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory StringValue.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'StringValue', package: const $pb.PackageName(_omitMessageNames ? '' : 'google.protobuf'), createEmptyInstance: create, toProto3Json: $mixin.StringValueMixin.toProto3JsonHelper, fromProto3Json: $mixin.StringValueMixin.fromProto3JsonHelper)
+    ..aOS(1, _omitFieldNames ? '' : 'value')
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  StringValue clone() => StringValue()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  StringValue copyWith(void Function(StringValue) updates) => super.copyWith((message) => updates(message as StringValue)) as StringValue;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static StringValue create() => StringValue._();
+  StringValue createEmptyInstance() => create();
+  static $pb.PbList<StringValue> createRepeated() => $pb.PbList<StringValue>();
+  @$core.pragma('dart2js:noInline')
+  static StringValue getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<StringValue>(create);
+  static StringValue? _defaultInstance;
+
+  /// The string value.
+  @$pb.TagNumber(1)
+  $core.String get value => $_getSZ(0);
+  @$pb.TagNumber(1)
+  set value($core.String v) { $_setString(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasValue() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearValue() => clearField(1);
+}
+
+///  Wrapper message for `bytes`.
+///
+///  The JSON representation for `BytesValue` is JSON string.
+///
+///  Not recommended for use in new APIs, but still useful for legacy APIs and
+///  has no plan to be removed.
+class BytesValue extends $pb.GeneratedMessage with $mixin.BytesValueMixin {
+  factory BytesValue({
+    $core.List<$core.int>? value,
+  }) {
+    final $result = create();
+    if (value != null) {
+      $result.value = value;
+    }
+    return $result;
+  }
+  BytesValue._() : super();
+  factory BytesValue.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
+  factory BytesValue.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
+
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(_omitMessageNames ? '' : 'BytesValue', package: const $pb.PackageName(_omitMessageNames ? '' : 'google.protobuf'), createEmptyInstance: create, toProto3Json: $mixin.BytesValueMixin.toProto3JsonHelper, fromProto3Json: $mixin.BytesValueMixin.fromProto3JsonHelper)
+    ..a<$core.List<$core.int>>(1, _omitFieldNames ? '' : 'value', $pb.PbFieldType.OY)
+    ..hasRequiredFields = false
+  ;
+
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
+  'Will be removed in next major version')
+  BytesValue clone() => BytesValue()..mergeFromMessage(this);
+  @$core.Deprecated(
+  'Using this can add significant overhead to your binary. '
+  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
+  'Will be removed in next major version')
+  BytesValue copyWith(void Function(BytesValue) updates) => super.copyWith((message) => updates(message as BytesValue)) as BytesValue;
+
+  $pb.BuilderInfo get info_ => _i;
+
+  @$core.pragma('dart2js:noInline')
+  static BytesValue create() => BytesValue._();
+  BytesValue createEmptyInstance() => create();
+  static $pb.PbList<BytesValue> createRepeated() => $pb.PbList<BytesValue>();
+  @$core.pragma('dart2js:noInline')
+  static BytesValue getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<BytesValue>(create);
+  static BytesValue? _defaultInstance;
+
+  /// The bytes value.
+  @$pb.TagNumber(1)
+  $core.List<$core.int> get value => $_getN(0);
+  @$pb.TagNumber(1)
+  set value($core.List<$core.int> v) { $_setBytes(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasValue() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearValue() => clearField(1);
+}
+
+
+const _omitFieldNames = $core.bool.fromEnvironment('protobuf.omit_field_names');
+const _omitMessageNames = $core.bool.fromEnvironment('protobuf.omit_message_names');
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pbenum.dart
+================================================================================
+//
+//  Generated code. Do not modify.
+//  source: google/protobuf/wrappers.proto
+//
+// @dart = 2.12
+
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pbjson.dart
+================================================================================
+//
+//  Generated code. Do not modify.
+//  source: google/protobuf/wrappers.proto
+//
+// @dart = 2.12
+
+// ignore_for_file: annotate_overrides, camel_case_types, comment_references
+// ignore_for_file: constant_identifier_names, library_prefixes
+// ignore_for_file: non_constant_identifier_names, prefer_final_fields
+// ignore_for_file: unnecessary_import, unnecessary_this, unused_import
+
+import 'dart:convert' as $convert;
+import 'dart:core' as $core;
+import 'dart:typed_data' as $typed_data;
+
+@$core.Deprecated('Use doubleValueDescriptor instead')
+const DoubleValue$json = {
+  '1': 'DoubleValue',
+  '2': [
+    {'1': 'value', '3': 1, '4': 1, '5': 1, '10': 'value'},
+  ],
+};
+
+/// Descriptor for `DoubleValue`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List doubleValueDescriptor = $convert.base64Decode(
+    'CgtEb3VibGVWYWx1ZRIUCgV2YWx1ZRgBIAEoAVIFdmFsdWU=');
+
+@$core.Deprecated('Use floatValueDescriptor instead')
+const FloatValue$json = {
+  '1': 'FloatValue',
+  '2': [
+    {'1': 'value', '3': 1, '4': 1, '5': 2, '10': 'value'},
+  ],
+};
+
+/// Descriptor for `FloatValue`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List floatValueDescriptor = $convert.base64Decode(
+    'CgpGbG9hdFZhbHVlEhQKBXZhbHVlGAEgASgCUgV2YWx1ZQ==');
+
+@$core.Deprecated('Use int64ValueDescriptor instead')
+const Int64Value$json = {
+  '1': 'Int64Value',
+  '2': [
+    {'1': 'value', '3': 1, '4': 1, '5': 3, '10': 'value'},
+  ],
+};
+
+/// Descriptor for `Int64Value`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List int64ValueDescriptor = $convert.base64Decode(
+    'CgpJbnQ2NFZhbHVlEhQKBXZhbHVlGAEgASgDUgV2YWx1ZQ==');
+
+@$core.Deprecated('Use uInt64ValueDescriptor instead')
+const UInt64Value$json = {
+  '1': 'UInt64Value',
+  '2': [
+    {'1': 'value', '3': 1, '4': 1, '5': 4, '10': 'value'},
+  ],
+};
+
+/// Descriptor for `UInt64Value`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List uInt64ValueDescriptor = $convert.base64Decode(
+    'CgtVSW50NjRWYWx1ZRIUCgV2YWx1ZRgBIAEoBFIFdmFsdWU=');
+
+@$core.Deprecated('Use int32ValueDescriptor instead')
+const Int32Value$json = {
+  '1': 'Int32Value',
+  '2': [
+    {'1': 'value', '3': 1, '4': 1, '5': 5, '10': 'value'},
+  ],
+};
+
+/// Descriptor for `Int32Value`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List int32ValueDescriptor = $convert.base64Decode(
+    'CgpJbnQzMlZhbHVlEhQKBXZhbHVlGAEgASgFUgV2YWx1ZQ==');
+
+@$core.Deprecated('Use uInt32ValueDescriptor instead')
+const UInt32Value$json = {
+  '1': 'UInt32Value',
+  '2': [
+    {'1': 'value', '3': 1, '4': 1, '5': 13, '10': 'value'},
+  ],
+};
+
+/// Descriptor for `UInt32Value`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List uInt32ValueDescriptor = $convert.base64Decode(
+    'CgtVSW50MzJWYWx1ZRIUCgV2YWx1ZRgBIAEoDVIFdmFsdWU=');
+
+@$core.Deprecated('Use boolValueDescriptor instead')
+const BoolValue$json = {
+  '1': 'BoolValue',
+  '2': [
+    {'1': 'value', '3': 1, '4': 1, '5': 8, '10': 'value'},
+  ],
+};
+
+/// Descriptor for `BoolValue`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List boolValueDescriptor = $convert.base64Decode(
+    'CglCb29sVmFsdWUSFAoFdmFsdWUYASABKAhSBXZhbHVl');
+
+@$core.Deprecated('Use stringValueDescriptor instead')
+const StringValue$json = {
+  '1': 'StringValue',
+  '2': [
+    {'1': 'value', '3': 1, '4': 1, '5': 9, '10': 'value'},
+  ],
+};
+
+/// Descriptor for `StringValue`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List stringValueDescriptor = $convert.base64Decode(
+    'CgtTdHJpbmdWYWx1ZRIUCgV2YWx1ZRgBIAEoCVIFdmFsdWU=');
+
+@$core.Deprecated('Use bytesValueDescriptor instead')
+const BytesValue$json = {
+  '1': 'BytesValue',
+  '2': [
+    {'1': 'value', '3': 1, '4': 1, '5': 12, '10': 'value'},
+  ],
+};
+
+/// Descriptor for `BytesValue`. Decode as a `google.protobuf.DescriptorProto`.
+final $typed_data.Uint8List bytesValueDescriptor = $convert.base64Decode(
+    'CgpCeXRlc1ZhbHVlEhQKBXZhbHVlGAEgASgMUgV2YWx1ZQ==');
+
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\mqtt_service.dart
+================================================================================
+import 'dart:async';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
+
+import 'sensor_packet.dart';
+import 'sensor_deserializer.dart';
+
+class MQTTService {
+
+  late MqttServerClient client;
+
+  final StreamController<SensorPacket> _controller =
+      StreamController.broadcast();
+
+  Stream<SensorPacket> get stream => _controller.stream;
+
+  Future<void> connect() async {
+
+    client = MqttServerClient('192.168.0.101', 'flutter_client');
+
+    client.port = 1883;
+    client.keepAlivePeriod = 20;
+    client.logging(on: false);
+
+    final connMess = MqttConnectMessage()
+        .withClientIdentifier('flutter_client')
+        .startClean();
+
+    client.connectionMessage = connMess;
+
+    await client.connect();
+
+    if (client.connectionStatus!.state !=
+        MqttConnectionState.connected) {
+
+      throw Exception("MQTT connection failed");
+    }
+
+    print("MQTT connected");
+
+    client.subscribe("Pacifier/#", MqttQos.atLeastOnce);
+
+    client.updates!.listen((events) {
+
+      final rec = events.first.payload as MqttPublishMessage;
+
+      final payload = rec.payload.message;
+
+      final topic = events.first.topic;
+
+      try {
+
+        final packet =
+            SensorDeserializer.parse(topic, payload);
+
+        _controller.add(packet);
+
+      } catch (e) {
+
+        print("Decode error: $e");
+      }
+    });
+  }
+}
+
+final mqttService = MQTTService();
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\sensor_deserializer.dart
+================================================================================
+import '../../generated/sensor_data.pb.dart' as protos;
+import 'sensor_packet.dart';
+
+class SensorDeserializer {
+
+  static SensorPacket parse(
+      String topic,
+      List<int> payload,
+      ) {
+
+    final parts = topic.split('/');
+
+    final pacifierId = parts.length > 1 ? parts[1] : "0";
+    final sensorType = parts.length > 2 ? parts[2] : "unknown";
+
+    final group = parts.length > 0 ? parts[0] : "backend";
+
+    final values = <String, num>{};
+
+    switch (sensorType) {
+
+      case "imu":
+        final msg = protos.IMUData.fromBuffer(payload);
+
+        values["temperature"] = msg.temperature;
+
+        values["acc_x"] = msg.acc.x;
+        values["acc_y"] = msg.acc.y;
+        values["acc_z"] = msg.acc.z;
+
+        values["gyro_x"] = msg.gyro.x;
+        values["gyro_y"] = msg.gyro.y;
+        values["gyro_z"] = msg.gyro.z;
+
+        break;
+
+      case "airflow":
+        final msg = protos.AIRFLOWData.fromBuffer(payload);
+
+        values["voltage_l"] = msg.voltage10kL;
+        values["voltage_r"] = msg.voltage10kR;
+        values["voltage_e"] = msg.voltage10kE;
+
+        values["temp_l"] = msg.tempL;
+        values["temp_r"] = msg.tempR;
+        values["temp_e"] = msg.tempE;
+
+        break;
+
+      case "pt":
+        final msg = protos.PTData.fromBuffer(payload);
+
+        values["temperature"] = msg.temperature;
+        values["pressure"] = msg.pressure;
+
+        break;
+
+      default:
+        break;
+    }
+
+    return SensorPacket(
+      pacifierId: pacifierId,
+      sensorType: sensorType,
+      sensorGroup: group,
+      values: values,
+    );
+  }
+}
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\sensor_packet.dart
+================================================================================
+class SensorPacket {
+  final String pacifierId;
+  final String sensorType;
+  final String sensorGroup;
+  final Map<String, num> values;
+
+  SensorPacket({
+    required this.pacifierId,
+    required this.sensorType,
+    required this.sensorGroup,
+    required this.values,
+  });
+}
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\active_monitoring\activemonitoring.dart
+================================================================================
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:fl_chart/fl_chart.dart';
+
+import '../../ipc_layer/mqtt/sensor_packet.dart';
+import '../../client_layer/connector.dart';
+import 'graphcreation.dart';
+
+class ActiveMonitoring extends StatefulWidget {
+  final String backend;
+  const ActiveMonitoring({super.key, required this.backend});
+
+  @override
+  State<ActiveMonitoring> createState() => _ActiveMonitoringState();
+}
+
+class _ActiveMonitoringState extends State<ActiveMonitoring>
+    with TickerProviderStateMixin {
+
+  StreamSubscription<SensorPacket>? _sub;
+
+  final Map<String, Map<String, Map<String, List<FlSpot>>>> _buffers = {};
+  final Set<String> _selectedPacifiers = {};
+  final List<String> _logs = [];
+
+  late final TabController _tabController;
+  int _nextX = 0;
+
+  int _packetCount = 0;
+  final ValueNotifier<double> _hzNotifier = ValueNotifier(0);
+  Timer? _hzTimer;
+
+  int _frameCount = 0;
+  final ValueNotifier<double> _fpsNotifier = ValueNotifier(0);
+  Timer? _fpsTimer;
+
+  late final Ticker _ticker;
+  bool _needsRebuild = false;
+
+  final List<Color> _palette = [
+    Colors.blue,
+    Colors.red,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.teal,
+    Colors.amber,
+    Colors.indigo,
+    Colors.cyan,
+    Colors.lime,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _tabController = TabController(length: 2, vsync: this);
+
+    _ticker = createTicker((_) {
+      if (_needsRebuild && mounted) {
+        _frameCount++;
+        setState(() => _needsRebuild = false);
+      }
+    })..start();
+
+    _hzTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _hzNotifier.value = _packetCount.toDouble();
+      _packetCount = 0;
+    });
+
+    _fpsTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _fpsNotifier.value = _frameCount.toDouble();
+      _frameCount = 0;
+    });
+
+    _subscribe();
+  }
+
+  void _subscribe() {
+    _sub = Connector()
+        .dataStreamFor(widget.backend)
+        .listen(
+      (SensorPacket packet) {
+
+        _packetCount++;
+
+        _handleSensorData(packet);
+
+        _needsRebuild = true;
+
+        final line =
+            '[${DateTime.now().toIso8601String()}] '
+            '[${packet.sensorGroup}] '
+            'pacifier=${packet.pacifierId}, '
+            'type=${packet.sensorType}, '
+            'values=${packet.values}';
+
+        _logs.add(line);
+
+        if (_logs.length > 200) {
+          _logs.removeAt(0);
+        }
+      },
+      onError: (e) {
+        _logs.add('[${DateTime.now().toIso8601String()}] Error: $e');
+        if (_logs.length > 200) _logs.removeAt(0);
+        _stopMonitoring('Backend error – monitoring stopped');
+      },
+      onDone: () {
+        _stopMonitoring('Backend disconnected – monitoring stopped');
+      },
+    );
+  }
+
+  void _stopMonitoring(String message) {
+    _sub?.cancel();
+    _hzTimer?.cancel();
+    _fpsTimer?.cancel();
+    _ticker.stop();
+
+    if (mounted) {
+      setState(() {
+        _needsRebuild = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  void _handleSensorData(SensorPacket packet) {
+
+    final t = (_nextX++).toDouble();
+
+    final typeMap = _buffers.putIfAbsent(
+      packet.sensorType,
+      () => <String, Map<String, List<FlSpot>>>{},
+    );
+
+    final groupName =
+        '${packet.sensorGroup}_${packet.pacifierId}';
+
+    final groupMap = typeMap.putIfAbsent(
+      groupName,
+      () => <String, List<FlSpot>>{},
+    );
+
+    packet.values.forEach((key, value) {
+
+      final series =
+          groupMap.putIfAbsent(key, () => <FlSpot>[]);
+
+      series.add(FlSpot(t, value.toDouble()));
+
+      if (series.length > 50) {
+        series.removeAt(0);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _ticker.dispose();
+    _hzTimer?.cancel();
+    _fpsTimer?.cancel();
+    _hzNotifier.dispose();
+    _fpsNotifier.dispose();
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    final pacifierIds = <String>{};
+
+    _buffers.values.forEach((groups) {
+      groups.keys.forEach((g) {
+        pacifierIds.add(g.split('_').last);
+      });
+    });
+
+    pacifierIds.removeWhere((id) => id.isEmpty);
+
+    final pacifierList = pacifierIds.toList()
+      ..sort((a, b) =>
+          int.tryParse(a)!.compareTo(int.tryParse(b)!));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Active Monitoring — ${widget.backend}'),
+        actions: [
+
+          ValueListenableBuilder<double>(
+            valueListenable: _fpsNotifier,
+            builder: (_, fps, __) => Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Center(
+                child: Text(
+                  'FPS: ${fps.toStringAsFixed(0)}',
+                  style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500),
+                ),
+              ),
+            ),
+          ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          tabs: const [
+            Tab(text: 'Graphs'),
+            Tab(text: 'Logs')
+          ],
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+
+          RepaintBoundary(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+
+                if (pacifierList.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: pacifierList.map((id) {
+
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: FilterChip(
+                              label: Text('Pacifier $id'),
+                              selected: _selectedPacifiers.contains(id),
+                              onSelected: (sel) {
+
+                                setState(() {
+                                  sel
+                                      ? _selectedPacifiers.add(id)
+                                      : _selectedPacifiers.remove(id);
+                                });
+                              },
+                            ),
+                          );
+
+                        }).toList(),
+                      ),
+                    ),
+                  ),
+
+                Expanded(
+                  child: _selectedPacifiers.isEmpty
+                      ? const Center(
+                          child: Text(
+                              'Select a chip to show graphs'))
+                      : ListView(
+                          children: [
+
+                            for (final id in _selectedPacifiers) ...[
+
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 8),
+                                child: Text(
+                                  'Pacifier $id',
+                                  style: const TextStyle(
+                                      fontSize: 20,
+                                      fontWeight:
+                                          FontWeight.bold),
+                                ),
+                              ),
+
+                              Builder(builder: (_) {
+
+                                final filtered = <
+                                    String,
+                                    Map<String,
+                                        Map<String,
+                                            List<FlSpot>>>>{};
+
+                                _buffers.forEach((stype, groups) {
+
+                                  final sub = <
+                                      String,
+                                      Map<String,
+                                          List<FlSpot>>>{};
+
+                                  groups.forEach((gname, series) {
+
+                                    if (gname.endsWith('_$id')) {
+                                      sub[gname] = series;
+                                    }
+
+                                  });
+
+                                  if (sub.isNotEmpty) {
+                                    filtered[stype] = sub;
+                                  }
+
+                                });
+
+                                return GraphCreation.buildGraphs(
+                                    filtered, _palette);
+
+                              }),
+
+                            ],
+
+                          ],
+                        ),
+                ),
+
+              ],
+            ),
+          ),
+
+          RepaintBoundary(
+            child: ListView.builder(
+              padding: const EdgeInsets.all(8),
+              itemCount: _logs.length,
+              itemBuilder: (_, i) =>
+                  Text(_logs[i],
+                      style:
+                          const TextStyle(fontSize: 12)),
+            ),
+          ),
+
+        ],
+      ),
+    );
+  }
+}
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\active_monitoring\graphcreation.dart
+================================================================================
+// File: lib/screens/active_monitoring/graphcreation.dart
+
+import 'dart:math';
+import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+
+class GraphCreation {
+  /// [buffers]: sensorType → groupName → seriesName → spots
+  /// [palette]: list of colors to cycle through
+  static Widget buildGraphs(
+      Map<String, Map<String, Map<String, List<FlSpot>>>> buffers,
+      List<Color> palette,
+      ) {
+    final children = <Widget>[];
+
+    buffers.forEach((sensorType, groups) {
+      children.add(Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        child: Text(
+          sensorType.toUpperCase(),
+          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+      ));
+
+      final combined = <String, List<FlSpot>>{};
+      for (final seriesMap in groups.values) {
+        combined.addAll(seriesMap);
+      }
+
+      final measurementMap = <String, Map<String, List<FlSpot>>>{};
+      combined.forEach((seriesName, spots) {
+        final measurement = seriesName.split(RegExp(r'[_\[]')).first;
+        measurementMap
+            .putIfAbsent(measurement, () => <String, List<FlSpot>>{})[seriesName] =
+            spots;
+      });
+
+      final measurements = measurementMap.keys.toList()..sort();
+      for (final measurement in measurements) {
+        final subSeries = measurementMap[measurement]!;
+        children.add(Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+          child: _buildChartCard(measurement, subSeries, palette),
+        ));
+      }
+    });
+
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
+    );
+  }
+
+  static Widget _buildChartCard(
+      String title,
+      Map<String, List<FlSpot>> seriesMap,
+      List<Color> palette,
+      ) {
+    // 1) Collect & clamp Y values for auto-scaling
+    final rawYs = seriesMap.values.expand((s) => s.map((pt) => pt.y)).toList();
+    double meanY = 0, stdY = 0;
+    if (rawYs.isNotEmpty) {
+      meanY = rawYs.reduce((a, b) => a + b) / rawYs.length;
+      final varSum = rawYs
+          .map((y) => pow(y - meanY, 2))
+          .reduce((a, b) => a + b) /
+          rawYs.length;
+      stdY = sqrt(varSum);
+    }
+    final minClip = meanY - 3 * stdY, maxClip = meanY + 3 * stdY;
+    final clippedYs = rawYs.map((y) => y.clamp(minClip, maxClip)).toList();
+    double minY = clippedYs.isEmpty ? 0 : clippedYs.reduce(min);
+    double maxY = clippedYs.isEmpty ? 1 : clippedYs.reduce(max);
+    final pad = (maxY - minY) * 0.05;
+    final axisMinY = minY - pad, axisMaxY = maxY + pad;
+
+    // 2) Invert X-axis if desired
+    final allXs = seriesMap.values.expand((s) => s.map((pt) => pt.x));
+    final maxX = allXs.isEmpty ? 0.0 : allXs.reduce(max);
+
+    // 3) Build each LineChartBarData
+    final seriesNames = seriesMap.keys.toList()..sort();
+    final bars = <LineChartBarData>[];
+
+    for (var i = 0; i < seriesNames.length; i++) {
+      final orig = seriesMap[seriesNames[i]]!;
+      final processed = orig
+          .map((pt) => FlSpot(maxX - pt.x, pt.y.clamp(minClip, maxClip)))
+          .toList(growable: false);
+
+      bars.add(LineChartBarData(
+        spots: processed,
+        isCurved: true,
+        curveSmoothness: 0.2,
+        color: palette[i % palette.length],
+        barWidth: 4.0,
+        dotData: FlDotData(show: false),
+        belowBarData: BarAreaData(
+          show: true,
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              palette[i % palette.length].withOpacity(0.3),
+              palette[i % palette.length].withOpacity(0.0),
+            ],
+          ),
+        ),
+      ));
+    }
+
+    // 4) Legend
+    final legend = Wrap(
+      spacing: 12,
+      runSpacing: 4,
+      children: [
+        for (var i = 0; i < seriesNames.length; i++) ...[
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: palette[i % palette.length],
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(seriesNames[i], style: const TextStyle(fontSize: 12)),
+            ],
+          )
+        ]
+      ],
+    );
+
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 6),
+            legend,
+            const SizedBox(height: 10),
+            SizedBox(
+              height: 160,
+              child: LineChart(
+                LineChartData(
+                  minY: axisMinY,
+                  maxY: axisMaxY,
+                  lineBarsData: bars,
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: true,
+                    drawHorizontalLine: true,
+                    getDrawingVerticalLine: (_) => FlLine(
+                      color: Colors.grey.withOpacity(0.2),
+                      strokeWidth: 1,
+                      dashArray: [4, 4],
+                    ),
+                    getDrawingHorizontalLine: (_) => FlLine(
+                      color: Colors.grey.withOpacity(0.2),
+                      strokeWidth: 1,
+                      dashArray: [4, 4],
+                    ),
+                  ),
+                  titlesData: FlTitlesData(show: false),
+                  borderData: FlBorderData(show: false),
+
+                  // --- Corrected Tooltip Configuration ---
+                  lineTouchData: LineTouchData(
+                    enabled: true,
+                    touchTooltipData: LineTouchTooltipData(
+                      getTooltipColor: (_) => Colors.black87,
+                      tooltipBorderRadius: BorderRadius.circular(6),
+                      tooltipPadding: const EdgeInsets.all(6),
+                      fitInsideHorizontally: true,
+                      fitInsideVertically: true,
+                      getTooltipItems: (spots) {
+                        return spots.map((spot) {
+                          final name = seriesNames[spot.barIndex];
+                          final y = spot.y.toStringAsFixed(3);
+                          return LineTooltipItem(
+                            '$name: $y',
+                            TextStyle(
+                              color: spot.bar.color,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\campaign_monitoring\campaigncreation.dart
+================================================================================
+// File: lib/screens/campaign_monitoring/campaigncreation.dart
+
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+
+import '../../client_layer/connector.dart';
+import '../../ipc_layer/mqtt/sensor_packet.dart';
+import '../active_monitoring/graphcreation.dart';
+
+class CampaignCreation extends StatefulWidget {
+  final String backend;
+
+  const CampaignCreation({super.key, required this.backend});
+
+  @override
+  State<CampaignCreation> createState() => _CampaignCreationState();
+}
+
+class _CampaignCreationState extends State<CampaignCreation>
+    with SingleTickerProviderStateMixin {
+
+  final _campaignController = TextEditingController();
+
+  final _available = <String>{};
+  final _selected = <String>{};
+
+  bool _inCampaign = false;
+
+  StreamSubscription<SensorPacket>? _sub;
+
+  Timer? _renderTimer;
+
+  late final TabController _tabs;
+
+  int _nextX = 0;
+
+  final _buffers = <String, Map<String, Map<String, List<FlSpot>>>>{};
+
+  final _logs = <String>[];
+
+  final _palette = [
+    Colors.blue,
+    Colors.red,
+    Colors.green,
+    Colors.orange,
+    Colors.purple,
+    Colors.teal,
+    Colors.amber,
+    Colors.indigo,
+    Colors.cyan,
+    Colors.lime,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+
+    _tabs = TabController(length: 2, vsync: this);
+
+    /// detect pacifiers automatically
+    Connector().dataStreamFor(widget.backend).listen((packet) {
+
+      final id = packet.pacifierId;
+
+      if (_available.add(id)) {
+        setState(() {});
+      }
+
+    });
+  }
+
+  void _startCampaign() {
+
+    if (_campaignController.text.trim().isEmpty || _selected.isEmpty) {
+      return;
+    }
+
+    _buffers.clear();
+    _logs.clear();
+    _nextX = 0;
+
+    _sub = Connector()
+        .dataStreamFor(widget.backend)
+        .listen(
+
+      _onData,
+
+      onError: (e) => _onDoneOrError(
+          'Error: $e\nCampaign stopped'),
+
+      onDone: () => _onDoneOrError(
+          'Backend disconnected\nCampaign stopped'),
+    );
+
+    _renderTimer?.cancel();
+
+    _renderTimer = Timer.periodic(
+      const Duration(milliseconds: 33),
+          (_) {
+        if (mounted) setState(() {});
+      },
+    );
+
+    setState(() => _inCampaign = true);
+  }
+
+  void _onData(SensorPacket packet) {
+
+    final t = (_nextX++).toDouble();
+
+    if (!_selected.contains(packet.pacifierId)) {
+      return;
+    }
+
+    final typeMap =
+    _buffers.putIfAbsent(packet.sensorType, () => {});
+
+    final groupName =
+        '${packet.sensorGroup}_${packet.pacifierId}';
+
+    final groupMap =
+    typeMap.putIfAbsent(groupName, () => {});
+
+    /// add sensor values
+    packet.values.forEach((key, value) {
+
+      final s = groupMap.putIfAbsent(key, () => []);
+
+      s.add(FlSpot(t, value.toDouble()));
+
+      if (s.length > 50) {
+        s.removeAt(0);
+      }
+
+    });
+
+    /// logging
+    _logs.add(
+      '[${DateTime.now().toIso8601String()}] '
+          'pacifier=${packet.pacifierId}, '
+          'type=${packet.sensorType}, '
+          'group=${packet.sensorGroup}, '
+          'values=${packet.values}',
+    );
+  }
+
+  void _onDoneOrError(String message) {
+
+    _sub?.cancel();
+
+    _renderTimer?.cancel();
+
+    if (mounted) {
+
+      setState(() {
+
+        _inCampaign = false;
+
+        _selected.clear();
+
+        _buffers.clear();
+
+        _logs.clear();
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
+  }
+
+  Future<void> _endCampaign() async {
+
+    final pathCtrl = TextEditingController();
+
+    String? errorText;
+
+    final result = await showDialog<String>(
+
+      context: context,
+
+      builder: (ctx) => StatefulBuilder(
+
+        builder: (ctx2, setInner) => AlertDialog(
+
+          title: const Text('Save Campaign Logs'),
+
+          content: TextField(
+            controller: pathCtrl,
+            decoration: InputDecoration(
+              labelText: 'Full file path',
+              hintText:
+              '/home/user/camp.txt or C:\\Logs\\camp.txt',
+              errorText: errorText,
+            ),
+          ),
+
+          actions: [
+
+            TextButton(
+                onPressed: () => Navigator.pop(ctx2),
+                child: const Text('Cancel')),
+
+            ElevatedButton(
+              onPressed: () {
+
+                final p = pathCtrl.text.trim();
+
+                if (p.isEmpty ||
+                    !p.toLowerCase().endsWith('.txt')) {
+
+                  setInner(() => errorText =
+                  'Path must end with ".txt"');
+
+                  return;
+                }
+
+                final dir = Directory(p).parent;
+
+                if (!dir.existsSync()) {
+
+                  setInner(() => errorText =
+                  'Directory does not exist');
+
+                  return;
+                }
+
+                Navigator.pop(ctx2, p);
+              },
+              child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null) return;
+
+    try {
+
+      File(result)
+        ..createSync(recursive: true)
+        ..writeAsStringSync(
+          _logs.join('\n') + '\n',
+          mode: FileMode.append,
+        );
+
+      _onDoneOrError('Logs saved, campaign ended');
+
+    } catch (e) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Save failed: $e')),
+      );
+    }
+  }
+
+  @override
+  void dispose() {
+
+    _campaignController.dispose();
+
+    _sub?.cancel();
+
+    _renderTimer?.cancel();
+
+    _tabs.dispose();
+
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+
+    if (!_inCampaign) {
+
+      return Padding(
+
+        padding: const EdgeInsets.all(16),
+
+        child: Column(
+
+          crossAxisAlignment:
+          CrossAxisAlignment.start,
+
+          children: [
+
+            const Text(
+              'Create New Campaign',
+              style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold),
+            ),
+
+            const SizedBox(height: 12),
+
+            TextField(
+              controller: _campaignController,
+              decoration: const InputDecoration(
+                  labelText: 'Campaign Name'),
+            ),
+
+            const SizedBox(height: 16),
+
+            const Text('Select Pacifiers:'),
+
+            const SizedBox(height: 8),
+
+            Wrap(
+              spacing: 12,
+              children: _available.map((id) {
+
+                final sel = _selected.contains(id);
+
+                return FilterChip(
+
+                  label: Text('Pacifier $id'),
+
+                  selected: sel,
+
+                  onSelected: (_) => setState(() {
+                    sel
+                        ? _selected.remove(id)
+                        : _selected.add(id);
+                  }),
+                );
+              }).toList(),
+            ),
+
+            const SizedBox(height: 24),
+
+            ElevatedButton(
+                onPressed: _startCampaign,
+                child: const Text('Start Campaign')),
+          ],
+        ),
+      );
+    }
+
+    final pacs = _selected.toList()
+      ..sort((a, b) => int.parse(a)
+          .compareTo(int.parse(b)));
+
+    return Scaffold(
+
+      appBar: AppBar(
+
+        title: Text(
+            'Campaign — ${widget.backend} (${_campaignController.text})'),
+
+        actions: [
+
+          TextButton(
+            onPressed: _endCampaign,
+            child: const Text('End'),
+            style: TextButton.styleFrom(
+                foregroundColor: Colors.red),
+          ),
+        ],
+
+        bottom: TabBar(
+            controller: _tabs,
+            tabs: const [
+              Tab(text: 'Graphs'),
+              Tab(text: 'Logs')
+            ]),
+      ),
+
+      body: TabBarView(
+        controller: _tabs,
+
+        children: [
+
+          Column(
+            children: [
+
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.all(8),
+
+                child: Row(
+                  children: pacs.map((id) {
+
+                    return Padding(
+
+                      padding:
+                      const EdgeInsets.only(right: 8),
+
+                      child: FilterChip(
+                          label: Text('Pacifier $id'),
+                          selected: true,
+                          onSelected: (_) {}),
+                    );
+
+                  }).toList(),
+                ),
+              ),
+
+              Expanded(
+                child: ListView(
+                  children: pacs.expand((id) {
+
+                    return [
+
+                      Padding(
+                        padding:
+                        const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8),
+
+                        child: Text(
+                          'Pacifier $id',
+                          style: const TextStyle(
+                              fontSize: 20,
+                              fontWeight:
+                              FontWeight.bold),
+                        ),
+                      ),
+
+                      Builder(builder: (_) {
+
+                        final filtered = <String,
+                            Map<String,
+                                Map<String,
+                                    List<FlSpot>>>>{};
+
+                        _buffers.forEach((stype, groups) {
+
+                          final sub =
+                          <String,
+                              Map<String,
+                                  List<FlSpot>>>{};
+
+                          groups.forEach((gname, series) {
+
+                            if (gname.endsWith('_$id')) {
+                              sub[gname] = series;
+                            }
+
+                          });
+
+                          if (sub.isNotEmpty) {
+                            filtered[stype] = sub;
+                          }
+                        });
+
+                        return GraphCreation
+                            .buildGraphs(
+                            filtered, _palette);
+                      }),
+                    ];
+
+                  }).toList(),
+                ),
+              ),
+            ],
+          ),
+
+          ListView.builder(
+            padding: const EdgeInsets.all(8),
+            itemCount: _logs.length,
+            itemBuilder: (_, i) =>
+                Text(_logs[i],
+                    style:
+                    const TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\historic_data\historicdata.dart
+================================================================================
+import 'dart:io';
+import 'package:flutter/material.dart';
+
+class HistoricData extends StatefulWidget {
+  const HistoricData({Key? key}) : super(key: key);
+
+  @override
+  State<HistoricData> createState() => _HistoricDataState();
+}
+
+class _HistoricDataState extends State<HistoricData> {
+  final ScrollController _verticalCtrl = ScrollController();
+  final ScrollController _horizontalCtrl = ScrollController();
+
+  final List<Map<String, String>> _rows = [];
+  final List<String> _columns = [];
+  int _currentPage = 1;
+  final int _rowsPerPage = 20;
+  bool _hasPrompted = false;
+
+  final TextEditingController _pageInput = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _pageInput.text = '1';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasPrompted) {
+      _hasPrompted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _promptAndLoad());
+    }
+  }
+
+  @override
+  void dispose() {
+    _verticalCtrl.dispose();
+    _horizontalCtrl.dispose();
+    _pageInput.dispose();
+    super.dispose();
+  }
+
+  Future<void> _promptAndLoad() async {
+    final controller = TextEditingController();
+    final path = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Open Historic Data File'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Full path to .txt file',
+            hintText: '/path/to/logs.txt',
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          ElevatedButton(
+            child: const Text('Open'),
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+          ),
+        ],
+      ),
+    );
+    if (path == null || path.isEmpty) return;
+
+    try {
+      final lines = await File(path).readAsLines();
+      _parseLines(lines);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to open file: $e')),
+      );
+    }
+  }
+
+  void _parseLines(List<String> lines) {
+    final cols = <String>{'timestamp', 'pacifier', 'type', 'group'};
+    final parsed = <Map<String, String>>[];
+
+    for (final line in lines) {
+      final tsMatch = RegExp(r'^\[(.*?)\]').firstMatch(line);
+      final ts = tsMatch?.group(1) ?? '';
+      final rest = line.replaceFirst(RegExp(r'^\[.*?\]\s*'), '');
+      final parts = rest.split(', data=');
+      final left = parts[0];
+      final dataPart = parts.length > 1
+          ? parts[1].replaceFirst(RegExp(r'^\{|\}$'), '')
+          : '';
+
+      final row = <String, String>{};
+      row['timestamp'] = ts;
+
+      for (final kv in left.split(', ')) {
+        final kvp = kv.split('=');
+        if (kvp.length == 2) row[kvp[0]] = kvp[1];
+      }
+
+      if (dataPart.isNotEmpty) {
+        for (final entry in dataPart.split(RegExp(r'\],\s*'))) {
+          final m = RegExp(r'([^:\s]+):\[(.*)\]').firstMatch(entry + ']');
+          if (m != null) {
+            final key = m.group(1)!;
+            var val = m.group(2)!;
+            // strip any trailing ']' or '}'
+            val = val.replaceAll(RegExp(r'[\]\}]+$'), '');
+            row[key] = val;
+            cols.add(key);
+          }
+        }
+      }
+      parsed.add(row);
+    }
+
+    final ordered = <String>[];
+    ordered.addAll(['timestamp', 'pacifier', 'type', 'group']);
+    ordered.addAll(cols
+        .where((c) => !['timestamp', 'pacifier', 'type', 'group'].contains(c))
+        .toList()
+      ..sort());
+
+    setState(() {
+      _rows
+        ..clear()
+        ..addAll(parsed);
+      _columns
+        ..clear()
+        ..addAll(ordered);
+      _currentPage = 1;
+      _pageInput.text = '1';
+    });
+  }
+
+  void _goToPage(int p) {
+    final totalPages = (_rows.length + _rowsPerPage - 1) ~/ _rowsPerPage;
+    final target = p.clamp(1, totalPages);
+    setState(() {
+      _currentPage = target;
+      _pageInput.text = '$target';
+      _verticalCtrl.jumpTo(0);
+      _horizontalCtrl.jumpTo(0);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final totalPages = (_rows.length + _rowsPerPage - 1) ~/ _rowsPerPage;
+    final start = (_currentPage - 1) * _rowsPerPage;
+    final pageRows = _rows.skip(start).take(_rowsPerPage).toList();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Historic Data')),
+      body: _rows.isEmpty
+          ? const Center(child: Text('No data loaded'))
+          : Column(
+        children: [
+          // ── Pagination Controls ──────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: _currentPage > 1
+                      ? () => _goToPage(_currentPage - 1)
+                      : null,
+                ),
+                SizedBox(
+                  width: 60,
+                  child: TextField(
+                    controller: _pageInput,
+                    textAlign: TextAlign.center,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    onSubmitted: (v) {
+                      final p = int.tryParse(v) ?? _currentPage;
+                      _goToPage(p);
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('/ $totalPages'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: _currentPage < totalPages
+                      ? () => _goToPage(_currentPage + 1)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+
+          // ── Data Table with Dual Scrollbars ──────────────
+          Expanded(
+            child: Scrollbar(
+              controller: _verticalCtrl,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                controller: _verticalCtrl,
+                child: Scrollbar(
+                  controller: _horizontalCtrl,
+                  thumbVisibility: true,
+                  notificationPredicate: (n) =>
+                  n.metrics.axis == Axis.horizontal,
+                  child: SingleChildScrollView(
+                    controller: _horizontalCtrl,
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      headingRowColor: MaterialStateProperty.all(
+                          Colors.grey.shade800),
+                      columns: _columns
+                          .map((c) => DataColumn(
+                        label: Text(
+                          c[0].toUpperCase() + c.substring(1),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ))
+                          .toList(),
+                      rows: pageRows.map((row) {
+                        return DataRow(
+                          cells: _columns.map((col) {
+                            return DataCell(
+                              ConstrainedBox(
+                                constraints:
+                                const BoxConstraints(maxWidth: 150),
+                                child: Text(row[col] ?? ''),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\settings\settings.dart
+================================================================================
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'configuration/configextractor.dart';
+
+class Settings extends StatefulWidget {
+  final String backend;
+  final bool isDark;
+  final ValueChanged<bool> onThemeChanged;
+
+  const Settings({
+    Key? key,
+    required this.backend,
+    required this.isDark,
+    required this.onThemeChanged,
+  }) : super(key: key);
+
+  @override
+  State<Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends State<Settings> {
+  late bool _notificationsEnabled;
+  late bool _isDark;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationsEnabled = true;
+    _isDark = widget.isDark;
+  }
+
+  void _showThemeDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Select Theme'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<bool>(
+              title: const Text('Light'),
+              value: false,
+              groupValue: _isDark,
+              onChanged: (v) {
+                if (v != null) {
+                  setState(() => _isDark = v);
+                  widget.onThemeChanged(v);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+            RadioListTile<bool>(
+              title: const Text('Dark'),
+              value: true,
+              groupValue: _isDark,
+              onChanged: (v) {
+                if (v != null) {
+                  setState(() => _isDark = v);
+                  widget.onThemeChanged(v);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _checkBroker() async {
+    final host = ConfigExtractor.host;
+    final port = ConfigExtractor.port;
+    try {
+      final socket = await Socket.connect(host, port, timeout: const Duration(seconds: 2));
+      socket.destroy();
+      _showSnackBar('✅ Mosquitto broker is running on $host:$port');
+    } catch (_) {
+      _showSnackBar('❌ No Mosquitto broker found on $host:$port');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Settings — ${widget.backend}'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          ListTile(
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Broker Check'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _checkBroker,
+          ),
+          const Divider(),
+
+          ListTile(
+            leading: const Icon(Icons.color_lens_outlined),
+            title: const Text('Theme'),
+            subtitle: Text(_isDark ? 'Dark' : 'Light'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _showThemeDialog,
+          ),
+          const Divider(),
+
+          SwitchListTile.adaptive(
+            secondary: const Icon(Icons.notifications_outlined),
+            title: const Text('Enable Notifications'),
+            value: _notificationsEnabled,
+            onChanged: (v) => setState(() => _notificationsEnabled = v),
+          ),
+          const Divider(),
+        ],
+      ),
+    );
+  }
+}
+
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\settings\configuration\configextractor.dart
+================================================================================
+// File: lib/screens/settings/configuration/configextractor.dart
+
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:yaml/yaml.dart';
+
+/// Loads and exposes values from config.yml
+class ConfigExtractor {
+  static late final String host;
+  static late final int port;
+  /// Call once before runApp (or before you need the values).
+  static Future<void> init() async {
+    final yamlString = await rootBundle.loadString(
+      'lib/screens/settings/configuration/config.yml',
+    );
+    final doc = loadYaml(yamlString) as YamlMap;
+    host = doc['host'] as String;
+    port = doc['port'] as int;
+  }
+}
+
+
