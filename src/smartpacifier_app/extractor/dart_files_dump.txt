@@ -21,51 +21,40 @@ import 'components/theme/darktheme.dart';
 import 'components/sidebar/app_shell.dart';
 import 'screens/settings/configuration/configextractor.dart';
 
-void main() async {
-
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await ConfigExtractor.init();
 
-  await mqttService.connect();
-
   runApp(const MyApp());
 
+  // Start MQTT after GUI is already running
+  mqttService.connect();
 }
 
 class MyApp extends StatefulWidget {
-
   const MyApp({super.key});
 
   @override
   State<MyApp> createState() => _MyAppState();
-
 }
 
 class _MyAppState extends State<MyApp> {
-
   bool _isDark = true;
 
   void _toggleTheme(bool isDark) {
-
     setState(() => _isDark = isDark);
-
   }
 
   @override
   Widget build(BuildContext context) {
-
     return MaterialApp(
-
       title: 'SmartPacifier App',
-
       theme: _isDark ? darkTheme : lightTheme,
-
       home: AppShell(
         isDark: _isDark,
         onThemeChanged: _toggleTheme,
       ),
-
     );
   }
 }
@@ -131,6 +120,7 @@ FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sid
 import 'package:flutter/material.dart';
 import 'package:smartpacifier_app/client_layer/connector.dart';
 import 'package:smartpacifier_app/components/sidebar/sidebar.dart';
+import 'package:smartpacifier_app/ipc_layer/mqtt/mqtt_service.dart';
 import 'package:smartpacifier_app/screens/active_monitoring/activemonitoring.dart';
 import 'package:smartpacifier_app/screens/campaign_monitoring/campaigncreation.dart';
 import 'package:smartpacifier_app/screens/historic_data/historicdata.dart';
@@ -160,7 +150,9 @@ class _AppShellState extends State<AppShell> {
   @override
   void initState() {
     super.initState();
+
     _connector.clientsStream.listen((list) {
+      if (!mounted) return;
       setState(() {
         _clients = list;
         _selectedClient ??= list.isNotEmpty ? list.first : null;
@@ -172,16 +164,25 @@ class _AppShellState extends State<AppShell> {
     if (_selectedItem == SidebarItem.historicData) {
       return const HistoricData();
     }
+
     if (_selectedClient == null) {
-      return const Center(child: Text('No backend selected'));
+      return Center(
+        child: ValueListenableBuilder<String>(
+          valueListenable: mqttService.statusMessage,
+          builder: (_, status, __) => Text(
+            'No backend selected\n$status',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
     }
+
     switch (_selectedItem) {
       case SidebarItem.activeMonitoring:
         return ActiveMonitoring(backend: _selectedClient!);
       case SidebarItem.campaignCreation:
         return CampaignCreation(backend: _selectedClient!);
       case SidebarItem.historicData:
-      // handled above
         return const SizedBox();
       case SidebarItem.settings:
         return Settings(
@@ -189,6 +190,19 @@ class _AppShellState extends State<AppShell> {
           isDark: widget.isDark,
           onThemeChanged: widget.onThemeChanged,
         );
+    }
+  }
+
+  Color _statusColor(MqttConnectionStatus status) {
+    switch (status) {
+      case MqttConnectionStatus.connected:
+        return Colors.green;
+      case MqttConnectionStatus.connecting:
+        return Colors.orange;
+      case MqttConnectionStatus.error:
+        return Colors.red;
+      case MqttConnectionStatus.disconnected:
+        return Colors.grey;
     }
   }
 
@@ -209,13 +223,45 @@ class _AppShellState extends State<AppShell> {
             isExtended: _railExtended,
             onToggle: () => setState(() => _railExtended = !_railExtended),
           ),
-          Expanded(child: _buildContent()),
+          Expanded(
+            child: Column(
+              children: [
+                ValueListenableBuilder<MqttConnectionStatus>(
+                  valueListenable: mqttService.connectionStatus,
+                  builder: (_, status, __) {
+                    return ValueListenableBuilder<String>(
+                      valueListenable: mqttService.statusMessage,
+                      builder: (_, text, __) => Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        color: _statusColor(status).withOpacity(0.15),
+                        child: Row(
+                          children: [
+                            Icon(Icons.circle, size: 12, color: _statusColor(status)),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(text)),
+                            TextButton(
+                              onPressed: mqttService.connect,
+                              child: const Text('Reconnect'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                Expanded(child: _buildContent()),
+              ],
+            ),
+          ),
         ],
       ),
     );
   }
 }
-
 
 ================================================================================
 FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sidebar\sidebar.dart
@@ -1403,67 +1449,139 @@ final $typed_data.Uint8List bytesValueDescriptor = $convert.base64Decode(
 FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\mqtt_service.dart
 ================================================================================
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:mqtt_client/mqtt_client.dart';
 import 'package:mqtt_client/mqtt_server_client.dart';
 
+import '../../screens/settings/configuration/configextractor.dart';
 import 'sensor_packet.dart';
 import 'sensor_deserializer.dart';
 
-class MQTTService {
+enum MqttConnectionStatus {
+  disconnected,
+  connecting,
+  connected,
+  error,
+}
 
+class MQTTService {
   late MqttServerClient client;
 
   final StreamController<SensorPacket> _controller =
-      StreamController.broadcast();
+      StreamController<SensorPacket>.broadcast();
+
+  final ValueNotifier<MqttConnectionStatus> connectionStatus =
+      ValueNotifier<MqttConnectionStatus>(MqttConnectionStatus.disconnected);
+
+  final ValueNotifier<String> statusMessage =
+      ValueNotifier<String>('Disconnected');
 
   Stream<SensorPacket> get stream => _controller.stream;
 
+  bool _isConnecting = false;
+  bool _initialized = false;
+
   Future<void> connect() async {
+    if (_isConnecting) return;
+    _isConnecting = true;
 
-    client = MqttServerClient('192.168.0.101', 'flutter_client');
+    try {
+      connectionStatus.value = MqttConnectionStatus.connecting;
+      statusMessage.value =
+          'Connecting to ${ConfigExtractor.host}:${ConfigExtractor.port}...';
 
-    client.port = 1883;
-    client.keepAlivePeriod = 20;
-    client.logging(on: false);
+      client = MqttServerClient(ConfigExtractor.host, 'flutter_client');
+      client.port = ConfigExtractor.port;
+      client.keepAlivePeriod = 20;
+      client.logging(on: false);
+      client.autoReconnect = true;
+      client.resubscribeOnAutoReconnect = true;
 
-    final connMess = MqttConnectMessage()
-        .withClientIdentifier('flutter_client')
-        .startClean();
+      client.onConnected = _onConnected;
+      client.onDisconnected = _onDisconnected;
+      client.onSubscribed = (topic) {
+        statusMessage.value = 'Subscribed to $topic';
+      };
+      client.onAutoReconnect = () {
+        connectionStatus.value = MqttConnectionStatus.connecting;
+        statusMessage.value = 'Reconnecting...';
+      };
+      client.onAutoReconnected = () {
+        connectionStatus.value = MqttConnectionStatus.connected;
+        statusMessage.value = 'Reconnected';
+      };
 
-    client.connectionMessage = connMess;
+      final connMess = MqttConnectMessage()
+          .withClientIdentifier('flutter_client')
+          .startClean();
 
-    await client.connect();
+      client.connectionMessage = connMess;
 
-    if (client.connectionStatus!.state !=
-        MqttConnectionState.connected) {
+      await client.connect();
 
-      throw Exception("MQTT connection failed");
+      if (client.connectionStatus?.state != MqttConnectionState.connected) {
+        connectionStatus.value = MqttConnectionStatus.error;
+        statusMessage.value =
+            'MQTT connection failed: ${client.connectionStatus?.state}';
+        return;
+      }
+
+      if (!_initialized) {
+        _listenToMessages();
+        _initialized = true;
+      }
+
+      client.subscribe('Pacifier/#', MqttQos.atLeastOnce);
+    } catch (e) {
+      connectionStatus.value = MqttConnectionStatus.error;
+      statusMessage.value = 'MQTT connection error: $e';
+
+      try {
+        client.disconnect();
+      } catch (_) {}
+    } finally {
+      _isConnecting = false;
     }
+  }
 
-    print("MQTT connected");
+  void _onConnected() {
+    connectionStatus.value = MqttConnectionStatus.connected;
+    statusMessage.value =
+        'Connected to ${ConfigExtractor.host}:${ConfigExtractor.port}';
+  }
 
-    client.subscribe("Pacifier/#", MqttQos.atLeastOnce);
+  void _onDisconnected() {
+    connectionStatus.value = MqttConnectionStatus.disconnected;
+    statusMessage.value = 'Disconnected from broker';
+  }
 
-    client.updates!.listen((events) {
+  void _listenToMessages() {
+    client.updates?.listen((events) {
+      if (events.isEmpty) return;
 
       final rec = events.first.payload as MqttPublishMessage;
-
       final payload = rec.payload.message;
-
       final topic = events.first.topic;
 
       try {
-
-        final packet =
-            SensorDeserializer.parse(topic, payload);
-
+        final packet = SensorDeserializer.parse(topic, payload);
         _controller.add(packet);
-
       } catch (e) {
-
-        print("Decode error: $e");
+        debugPrint('Decode error: $e');
       }
     });
+  }
+
+  void disconnect() {
+    try {
+      client.disconnect();
+    } catch (_) {}
+  }
+
+  void dispose() {
+    _controller.close();
+    connectionStatus.dispose();
+    statusMessage.dispose();
   }
 }
 
@@ -1604,6 +1722,8 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
   final Set<String> _selectedPacifiers = {};
   final List<String> _logs = [];
 
+  final ScrollController _logScroll = ScrollController();
+
   late final TabController _tabController;
   int _nextX = 0;
 
@@ -1661,27 +1781,40 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     _sub = Connector()
         .dataStreamFor(widget.backend)
         .listen(
-      (SensorPacket packet) {
+        (SensorPacket packet) {
 
-        _packetCount++;
+          _packetCount++;
 
-        _handleSensorData(packet);
+          _handleSensorData(packet);
 
-        _needsRebuild = true;
+          _needsRebuild = true;
 
-        final line =
-            '[${DateTime.now().toIso8601String()}] '
-            '[${packet.sensorGroup}] '
-            'pacifier=${packet.pacifierId}, '
-            'type=${packet.sensorType}, '
-            'values=${packet.values}';
+          final line =
+              '[${DateTime.now().toIso8601String()}] '
+              '[${packet.sensorGroup}] '
+              'pacifier=${packet.pacifierId}, '
+              'type=${packet.sensorType}, '
+              'values=${packet.values}';
 
-        _logs.add(line);
+          _logs.add(line);
 
-        if (_logs.length > 200) {
-          _logs.removeAt(0);
-        }
-      },
+          if (_logs.length > 200) {
+            _logs.removeAt(0);
+          }
+
+          if (mounted) {
+            setState(() {});
+          }
+
+          /// auto-scroll logs
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            if (_logScroll.hasClients) {
+              _logScroll.jumpTo(
+                _logScroll.position.maxScrollExtent,
+              );
+            }
+          });
+        },
       onError: (e) {
         _logs.add('[${DateTime.now().toIso8601String()}] Error: $e');
         if (_logs.length > 200) _logs.removeAt(0);
@@ -1716,7 +1849,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     final typeMap = _buffers.putIfAbsent(
       packet.sensorType,
-      () => <String, Map<String, List<FlSpot>>>{},
+          () => <String, Map<String, List<FlSpot>>>{},
     );
 
     final groupName =
@@ -1724,13 +1857,13 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     final groupMap = typeMap.putIfAbsent(
       groupName,
-      () => <String, List<FlSpot>>{},
+          () => <String, List<FlSpot>>{},
     );
 
     packet.values.forEach((key, value) {
 
       final series =
-          groupMap.putIfAbsent(key, () => <FlSpot>[]);
+      groupMap.putIfAbsent(key, () => <FlSpot>[]);
 
       series.add(FlSpot(t, value.toDouble()));
 
@@ -1749,6 +1882,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     _hzNotifier.dispose();
     _fpsNotifier.dispose();
     _tabController.dispose();
+    _logScroll.dispose();
     super.dispose();
   }
 
@@ -1838,64 +1972,64 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
                 Expanded(
                   child: _selectedPacifiers.isEmpty
                       ? const Center(
-                          child: Text(
-                              'Select a chip to show graphs'))
+                      child: Text(
+                          'Select a chip to show graphs'))
                       : ListView(
-                          children: [
+                    children: [
 
-                            for (final id in _selectedPacifiers) ...[
+                      for (final id in _selectedPacifiers) ...[
 
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8),
-                                child: Text(
-                                  'Pacifier $id',
-                                  style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight:
-                                          FontWeight.bold),
-                                ),
-                              ),
-
-                              Builder(builder: (_) {
-
-                                final filtered = <
-                                    String,
-                                    Map<String,
-                                        Map<String,
-                                            List<FlSpot>>>>{};
-
-                                _buffers.forEach((stype, groups) {
-
-                                  final sub = <
-                                      String,
-                                      Map<String,
-                                          List<FlSpot>>>{};
-
-                                  groups.forEach((gname, series) {
-
-                                    if (gname.endsWith('_$id')) {
-                                      sub[gname] = series;
-                                    }
-
-                                  });
-
-                                  if (sub.isNotEmpty) {
-                                    filtered[stype] = sub;
-                                  }
-
-                                });
-
-                                return GraphCreation.buildGraphs(
-                                    filtered, _palette);
-
-                              }),
-
-                            ],
-
-                          ],
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8),
+                          child: Text(
+                            'Pacifier $id',
+                            style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight:
+                                FontWeight.bold),
+                          ),
                         ),
+
+                        Builder(builder: (_) {
+
+                          final filtered = <
+                              String,
+                              Map<String,
+                                  Map<String,
+                                      List<FlSpot>>>>{};
+
+                          _buffers.forEach((stype, groups) {
+
+                            final sub = <
+                                String,
+                                Map<String,
+                                    List<FlSpot>>>{};
+
+                            groups.forEach((gname, series) {
+
+                              if (gname.endsWith('_$id')) {
+                                sub[gname] = series;
+                              }
+
+                            });
+
+                            if (sub.isNotEmpty) {
+                              filtered[stype] = sub;
+                            }
+
+                          });
+
+                          return GraphCreation.buildGraphs(
+                              filtered, _palette);
+
+                        }),
+
+                      ],
+
+                    ],
+                  ),
                 ),
 
               ],
@@ -1904,12 +2038,13 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
           RepaintBoundary(
             child: ListView.builder(
+              controller: _logScroll,
               padding: const EdgeInsets.all(8),
               itemCount: _logs.length,
               itemBuilder: (_, i) =>
                   Text(_logs[i],
                       style:
-                          const TextStyle(fontSize: 12)),
+                      const TextStyle(fontSize: 12)),
             ),
           ),
 

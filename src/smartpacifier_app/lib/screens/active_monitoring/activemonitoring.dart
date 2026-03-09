@@ -25,6 +25,8 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
   final Set<String> _selectedPacifiers = {};
   final List<String> _logs = [];
 
+  final ScrollController _logScroll = ScrollController();
+
   late final TabController _tabController;
   int _nextX = 0;
 
@@ -102,6 +104,19 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
           if (_logs.length > 200) {
             _logs.removeAt(0);
           }
+
+          if (mounted) {
+            setState(() {});
+          }
+
+          /// auto-scroll logs
+          SchedulerBinding.instance.addPostFrameCallback((_) {
+            if (_logScroll.hasClients) {
+              _logScroll.jumpTo(
+                _logScroll.position.maxScrollExtent,
+              );
+            }
+          });
         },
       onError: (e) {
         _logs.add('[${DateTime.now().toIso8601String()}] Error: $e');
@@ -137,7 +152,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     final typeMap = _buffers.putIfAbsent(
       packet.sensorType,
-      () => <String, Map<String, List<FlSpot>>>{},
+          () => <String, Map<String, List<FlSpot>>>{},
     );
 
     final groupName =
@@ -145,13 +160,13 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     final groupMap = typeMap.putIfAbsent(
       groupName,
-      () => <String, List<FlSpot>>{},
+          () => <String, List<FlSpot>>{},
     );
 
     packet.values.forEach((key, value) {
 
       final series =
-          groupMap.putIfAbsent(key, () => <FlSpot>[]);
+      groupMap.putIfAbsent(key, () => <FlSpot>[]);
 
       series.add(FlSpot(t, value.toDouble()));
 
@@ -170,6 +185,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     _hzNotifier.dispose();
     _fpsNotifier.dispose();
     _tabController.dispose();
+    _logScroll.dispose();
     super.dispose();
   }
 
@@ -259,64 +275,64 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
                 Expanded(
                   child: _selectedPacifiers.isEmpty
                       ? const Center(
-                          child: Text(
-                              'Select a chip to show graphs'))
+                      child: Text(
+                          'Select a chip to show graphs'))
                       : ListView(
-                          children: [
+                    children: [
 
-                            for (final id in _selectedPacifiers) ...[
+                      for (final id in _selectedPacifiers) ...[
 
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 8),
-                                child: Text(
-                                  'Pacifier $id',
-                                  style: const TextStyle(
-                                      fontSize: 20,
-                                      fontWeight:
-                                          FontWeight.bold),
-                                ),
-                              ),
-
-                              Builder(builder: (_) {
-
-                                final filtered = <
-                                    String,
-                                    Map<String,
-                                        Map<String,
-                                            List<FlSpot>>>>{};
-
-                                _buffers.forEach((stype, groups) {
-
-                                  final sub = <
-                                      String,
-                                      Map<String,
-                                          List<FlSpot>>>{};
-
-                                  groups.forEach((gname, series) {
-
-                                    if (gname.endsWith('_$id')) {
-                                      sub[gname] = series;
-                                    }
-
-                                  });
-
-                                  if (sub.isNotEmpty) {
-                                    filtered[stype] = sub;
-                                  }
-
-                                });
-
-                                return GraphCreation.buildGraphs(
-                                    filtered, _palette);
-
-                              }),
-
-                            ],
-
-                          ],
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8),
+                          child: Text(
+                            'Pacifier $id',
+                            style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight:
+                                FontWeight.bold),
+                          ),
                         ),
+
+                        Builder(builder: (_) {
+
+                          final filtered = <
+                              String,
+                              Map<String,
+                                  Map<String,
+                                      List<FlSpot>>>>{};
+
+                          _buffers.forEach((stype, groups) {
+
+                            final sub = <
+                                String,
+                                Map<String,
+                                    List<FlSpot>>>{};
+
+                            groups.forEach((gname, series) {
+
+                              if (gname.endsWith('_$id')) {
+                                sub[gname] = series;
+                              }
+
+                            });
+
+                            if (sub.isNotEmpty) {
+                              filtered[stype] = sub;
+                            }
+
+                          });
+
+                          return GraphCreation.buildGraphs(
+                              filtered, _palette);
+
+                        }),
+
+                      ],
+
+                    ],
+                  ),
                 ),
 
               ],
@@ -325,12 +341,13 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
           RepaintBoundary(
             child: ListView.builder(
+              controller: _logScroll,
               padding: const EdgeInsets.all(8),
               itemCount: _logs.length,
               itemBuilder: (_, i) =>
                   Text(_logs[i],
                       style:
-                          const TextStyle(fontSize: 12)),
+                      const TextStyle(fontSize: 12)),
             ),
           ),
 
