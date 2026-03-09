@@ -456,7 +456,7 @@ final ThemeData darkTheme = ThemeData(
     foregroundColor: Colors.white,
   ),
 
-  cardTheme: CardTheme(
+  cardTheme: CardThemeData(
     elevation: 0,
     color: const Color(0xFF161B22),
     shape: RoundedRectangleBorder(

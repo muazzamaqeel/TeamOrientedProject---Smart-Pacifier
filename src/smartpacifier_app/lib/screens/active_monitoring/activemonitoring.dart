@@ -41,6 +41,9 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
   late final Ticker _ticker;
   bool _needsRebuild = false;
 
+  /// 🔴 Live values for badges
+  final Map<String, double> _liveValues = {};
+
   final List<Color> _palette = [
     Colors.blue,
     Colors.red,
@@ -60,6 +63,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     _tabController = TabController(length: 2, vsync: this);
 
+    /// GPU smooth rendering ticker
     _ticker = createTicker((_) {
       if (_needsRebuild && mounted) {
         _frameCount++;
@@ -169,9 +173,14 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
       series.add(FlSpot(t, value.toDouble()));
 
+      /// keep sliding window (oscilloscope style)
       if (series.length > 300) {
         series.removeAt(0);
       }
+
+      /// update live value
+      _liveValues['${packet.sensorType}_$key'] =
+          value.toDouble();
     });
   }
 
@@ -186,6 +195,30 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     _tabController.dispose();
     _logScroll.dispose();
     super.dispose();
+  }
+
+  Widget _buildLiveBadge(String label) {
+
+    final value = _liveValues[label];
+
+    if (value == null) return const SizedBox();
+
+    return Container(
+      margin: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        value.toStringAsFixed(2),
+        style: const TextStyle(
+            fontSize: 11,
+            color: Colors.white,
+            fontWeight: FontWeight.bold),
+      ),
+    );
   }
 
   Widget _buildLogCard(String line) {
@@ -329,6 +362,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
         controller: _tabController,
         children: [
 
+          /// GPU accelerated rendering
           RepaintBoundary(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -377,12 +411,20 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 8),
-                          child: Text(
-                            'Pacifier $id',
-                            style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight:
-                                FontWeight.bold),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Pacifier $id',
+                                style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight:
+                                    FontWeight.bold),
+                              ),
+                              const SizedBox(width: 10),
+                              _buildLiveBadge('pat_pressure'),
+                              _buildLiveBadge('pat_temperature'),
+                              _buildLiveBadge('airflow_raw_e'),
+                            ],
                           ),
                         ),
 
