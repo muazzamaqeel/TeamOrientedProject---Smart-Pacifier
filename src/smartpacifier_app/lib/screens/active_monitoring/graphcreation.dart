@@ -96,7 +96,7 @@ class GraphCreation {
         isCurved: true,
         curveSmoothness: 0.2,
         color: palette[i % palette.length],
-        barWidth: 4.0,
+        barWidth: 2.5,
         dotData: FlDotData(show: false),
         belowBarData: BarAreaData(
           show: true,

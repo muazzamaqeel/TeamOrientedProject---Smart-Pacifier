@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../screens/active_monitoring/activemonitoring.dart';
-import '../../screens/campaign_monitoring/campaigncreation.dart';
-import 'package:smartpacifier_app/screens/historic_data/historicdata.dart';
-import '../../screens/settings/settings.dart';
 
 enum SidebarItem { activeMonitoring, campaignCreation, historicData, settings }
 
@@ -27,81 +23,132 @@ class Sidebar extends StatelessWidget {
   });
 
   Widget _tile({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required bool selected,
     required VoidCallback onTap,
-  }) =>
-      InkWell(
-        onTap: onTap,
-        child: Container(
-          color: selected ? Colors.grey.withOpacity(0.2) : null,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          child: Row(
-            children: [
-              Icon(icon),
-              if (isExtended) ...[
-                const SizedBox(width: 12),
-                Expanded(child: Text(label)),
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: Material(
+        color: selected ? scheme.primary.withOpacity(0.15) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: selected ? scheme.primary : Colors.white70,
+                ),
+                if (isExtended) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontWeight:
+                            selected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      );
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: isExtended ? 200 : 60,
-      color: Theme.of(context).colorScheme.surfaceVariant,
+      width: isExtended ? 240 : 70,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant,
+        border: const Border(
+          right: BorderSide(color: Color(0xFF2B3240)),
+        ),
+      ),
       child: Column(
         children: [
-          IconButton(
-            icon: Icon(isExtended ? Icons.chevron_left : Icons.menu),
-            onPressed: onToggle,
-          ),
-          if (isExtended)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'Connected Clients',
-                style: Theme.of(context).textTheme.titleMedium,
+          const SizedBox(height: 10),
+
+          Row(
+            mainAxisAlignment:
+                isExtended ? MainAxisAlignment.spaceBetween : MainAxisAlignment.center,
+            children: [
+              if (isExtended)
+                const Padding(
+                  padding: EdgeInsets.only(left: 16),
+                  child: Text(
+                    "SmartPacifier",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              IconButton(
+                icon: Icon(isExtended ? Icons.chevron_left : Icons.menu),
+                onPressed: onToggle,
               ),
-            ),
+            ],
+          ),
+
+          const Divider(),
+
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
+
                 for (var c in clients)
                   _tile(
-                    icon: Icons.cloud_outlined,
+                    context: context,
+                    icon: Icons.sensors_outlined,
                     label: c,
                     selected: c == selectedClient,
                     onTap: () => onClientSelected(c),
                   ),
-                if (clients.isNotEmpty) const Divider(),
+
+                const Divider(),
+
                 _tile(
-                  icon: Icons.show_chart_outlined,
+                  context: context,
+                  icon: Icons.show_chart,
                   label: 'Active Monitoring',
                   selected: selectedItem == SidebarItem.activeMonitoring,
                   onTap: () => onItemSelected(SidebarItem.activeMonitoring),
                 ),
+
                 _tile(
-                  icon: Icons.campaign_outlined,
-                  label: 'Create Campaign',
+                  context: context,
+                  icon: Icons.campaign,
+                  label: 'Campaign',
                   selected: selectedItem == SidebarItem.campaignCreation,
                   onTap: () => onItemSelected(SidebarItem.campaignCreation),
                 ),
-                const Divider(), // separate Historic Data
+
                 _tile(
+                  context: context,
                   icon: Icons.history,
                   label: 'Historic Data',
                   selected: selectedItem == SidebarItem.historicData,
                   onTap: () => onItemSelected(SidebarItem.historicData),
                 ),
-                const Divider(), // then Settings
+
                 _tile(
-                  icon: Icons.settings_outlined,
+                  context: context,
+                  icon: Icons.settings,
                   label: 'Settings',
                   selected: selectedItem == SidebarItem.settings,
                   onTap: () => onItemSelected(SidebarItem.settings),

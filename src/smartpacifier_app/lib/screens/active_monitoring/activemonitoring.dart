@@ -84,40 +84,39 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     _sub = Connector()
         .dataStreamFor(widget.backend)
         .listen(
-        (SensorPacket packet) {
+      (SensorPacket packet) {
 
-          _packetCount++;
+        _packetCount++;
 
-          _handleSensorData(packet);
+        _handleSensorData(packet);
 
-          _needsRebuild = true;
+        _needsRebuild = true;
 
-          final line =
-              '[${DateTime.now().toIso8601String()}] '
-              '[${packet.sensorGroup}] '
-              'pacifier=${packet.pacifierId}, '
-              'type=${packet.sensorType}, '
-              'values=${packet.values}';
+        final line =
+            '[${DateTime.now().toIso8601String()}] '
+            '[${packet.sensorGroup}] '
+            'pacifier=${packet.pacifierId}, '
+            'type=${packet.sensorType}, '
+            'values=${packet.values}';
 
-          _logs.add(line);
+        _logs.add(line);
 
-          if (_logs.length > 200) {
-            _logs.removeAt(0);
+        if (_logs.length > 200) {
+          _logs.removeAt(0);
+        }
+
+        if (mounted) {
+          setState(() {});
+        }
+
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (_logScroll.hasClients) {
+            _logScroll.jumpTo(
+              _logScroll.position.maxScrollExtent,
+            );
           }
-
-          if (mounted) {
-            setState(() {});
-          }
-
-          /// auto-scroll logs
-          SchedulerBinding.instance.addPostFrameCallback((_) {
-            if (_logScroll.hasClients) {
-              _logScroll.jumpTo(
-                _logScroll.position.maxScrollExtent,
-              );
-            }
-          });
-        },
+        });
+      },
       onError: (e) {
         _logs.add('[${DateTime.now().toIso8601String()}] Error: $e');
         if (_logs.length > 200) _logs.removeAt(0);
@@ -152,7 +151,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     final typeMap = _buffers.putIfAbsent(
       packet.sensorType,
-          () => <String, Map<String, List<FlSpot>>>{},
+      () => <String, Map<String, List<FlSpot>>>{},
     );
 
     final groupName =
@@ -160,7 +159,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     final groupMap = typeMap.putIfAbsent(
       groupName,
-          () => <String, List<FlSpot>>{},
+      () => <String, List<FlSpot>>{},
     );
 
     packet.values.forEach((key, value) {
@@ -170,7 +169,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
       series.add(FlSpot(t, value.toDouble()));
 
-      if (series.length > 50) {
+      if (series.length > 300) {
         series.removeAt(0);
       }
     });
@@ -187,6 +186,98 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     _tabController.dispose();
     _logScroll.dispose();
     super.dispose();
+  }
+
+  Widget _buildLogCard(String line) {
+
+    final tsMatch = RegExp(r'^\[(.*?)\]').firstMatch(line);
+    final ts = tsMatch?.group(1) ?? '';
+
+    final pacMatch = RegExp(r'pacifier=(\d+)').firstMatch(line);
+    final pacifier = pacMatch?.group(1) ?? '?';
+
+    final typeMatch = RegExp(r'type=(\w+)').firstMatch(line);
+    final type = typeMatch?.group(1) ?? 'unknown';
+
+    final valuesMatch = RegExp(r'values=\{(.*)\}').firstMatch(line);
+    final values = valuesMatch?.group(1) ?? '';
+
+    Color typeColor;
+
+    switch (type) {
+      case 'pat':
+        typeColor = Colors.orange;
+        break;
+      case 'airflow':
+        typeColor = Colors.green;
+        break;
+      case 'imu':
+        typeColor = Colors.blue;
+        break;
+      default:
+        typeColor = Colors.grey;
+    }
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: typeColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                type.toUpperCase(),
+                style: TextStyle(
+                  color: typeColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  Text(
+                    'Pacifier $pacifier',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+
+                  const SizedBox(height: 2),
+
+                  Text(
+                    values,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+
+                  const SizedBox(height: 2),
+
+                  Text(
+                    ts,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -344,10 +435,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
               controller: _logScroll,
               padding: const EdgeInsets.all(8),
               itemCount: _logs.length,
-              itemBuilder: (_, i) =>
-                  Text(_logs[i],
-                      style:
-                      const TextStyle(fontSize: 12)),
+              itemBuilder: (_, i) => _buildLogCard(_logs[i]),
             ),
           ),
 

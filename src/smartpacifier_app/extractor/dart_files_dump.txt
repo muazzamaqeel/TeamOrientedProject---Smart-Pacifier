@@ -267,10 +267,6 @@ class _AppShellState extends State<AppShell> {
 FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sidebar\sidebar.dart
 ================================================================================
 import 'package:flutter/material.dart';
-import '../../screens/active_monitoring/activemonitoring.dart';
-import '../../screens/campaign_monitoring/campaigncreation.dart';
-import 'package:smartpacifier_app/screens/historic_data/historicdata.dart';
-import '../../screens/settings/settings.dart';
 
 enum SidebarItem { activeMonitoring, campaignCreation, historicData, settings }
 
@@ -295,81 +291,132 @@ class Sidebar extends StatelessWidget {
   });
 
   Widget _tile({
+    required BuildContext context,
     required IconData icon,
     required String label,
     required bool selected,
     required VoidCallback onTap,
-  }) =>
-      InkWell(
-        onTap: onTap,
-        child: Container(
-          color: selected ? Colors.grey.withOpacity(0.2) : null,
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-          child: Row(
-            children: [
-              Icon(icon),
-              if (isExtended) ...[
-                const SizedBox(width: 12),
-                Expanded(child: Text(label)),
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      child: Material(
+        color: selected ? scheme.primary.withOpacity(0.15) : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 12),
+            child: Row(
+              children: [
+                Icon(
+                  icon,
+                  size: 20,
+                  color: selected ? scheme.primary : Colors.white70,
+                ),
+                if (isExtended) ...[
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      label,
+                      style: TextStyle(
+                        fontWeight:
+                            selected ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      );
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: isExtended ? 200 : 60,
-      color: Theme.of(context).colorScheme.surfaceVariant,
+      width: isExtended ? 240 : 70,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceVariant,
+        border: const Border(
+          right: BorderSide(color: Color(0xFF2B3240)),
+        ),
+      ),
       child: Column(
         children: [
-          IconButton(
-            icon: Icon(isExtended ? Icons.chevron_left : Icons.menu),
-            onPressed: onToggle,
-          ),
-          if (isExtended)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Text(
-                'Connected Clients',
-                style: Theme.of(context).textTheme.titleMedium,
+          const SizedBox(height: 10),
+
+          Row(
+            mainAxisAlignment:
+                isExtended ? MainAxisAlignment.spaceBetween : MainAxisAlignment.center,
+            children: [
+              if (isExtended)
+                const Padding(
+                  padding: EdgeInsets.only(left: 16),
+                  child: Text(
+                    "SmartPacifier",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+              IconButton(
+                icon: Icon(isExtended ? Icons.chevron_left : Icons.menu),
+                onPressed: onToggle,
               ),
-            ),
+            ],
+          ),
+
+          const Divider(),
+
           Expanded(
             child: ListView(
               padding: EdgeInsets.zero,
               children: [
+
                 for (var c in clients)
                   _tile(
-                    icon: Icons.cloud_outlined,
+                    context: context,
+                    icon: Icons.sensors_outlined,
                     label: c,
                     selected: c == selectedClient,
                     onTap: () => onClientSelected(c),
                   ),
-                if (clients.isNotEmpty) const Divider(),
+
+                const Divider(),
+
                 _tile(
-                  icon: Icons.show_chart_outlined,
+                  context: context,
+                  icon: Icons.show_chart,
                   label: 'Active Monitoring',
                   selected: selectedItem == SidebarItem.activeMonitoring,
                   onTap: () => onItemSelected(SidebarItem.activeMonitoring),
                 ),
+
                 _tile(
-                  icon: Icons.campaign_outlined,
-                  label: 'Create Campaign',
+                  context: context,
+                  icon: Icons.campaign,
+                  label: 'Campaign',
                   selected: selectedItem == SidebarItem.campaignCreation,
                   onTap: () => onItemSelected(SidebarItem.campaignCreation),
                 ),
-                const Divider(), // separate Historic Data
+
                 _tile(
+                  context: context,
                   icon: Icons.history,
                   label: 'Historic Data',
                   selected: selectedItem == SidebarItem.historicData,
                   onTap: () => onItemSelected(SidebarItem.historicData),
                 ),
-                const Divider(), // then Settings
+
                 _tile(
-                  icon: Icons.settings_outlined,
+                  context: context,
+                  icon: Icons.settings,
                   label: 'Settings',
                   selected: selectedItem == SidebarItem.settings,
                   onTap: () => onItemSelected(SidebarItem.settings),
@@ -383,32 +430,64 @@ class Sidebar extends StatelessWidget {
   }
 }
 
-
 ================================================================================
 FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\theme\darktheme.dart
 ================================================================================
-// components/theme/darktheme.dart
-
 import 'package:flutter/material.dart';
 
 final ThemeData darkTheme = ThemeData(
+  useMaterial3: true,
   brightness: Brightness.dark,
-  primarySwatch: Colors.blue,
-  scaffoldBackgroundColor: Colors.grey.shade900,
-  appBarTheme: AppBarTheme(
-    backgroundColor: Colors.grey.shade900,
-    foregroundColor: Colors.white,
-    elevation: 0,
+
+  scaffoldBackgroundColor: const Color(0xFF0E1117),
+
+  colorScheme: const ColorScheme.dark(
+    primary: Color(0xFF4DA3FF),
+    secondary: Color(0xFF22C55E),
+    surface: Color(0xFF161B22),
+    surfaceVariant: Color(0xFF1F2630),
+    outline: Color(0xFF2B3240),
   ),
-  elevatedButtonTheme: ElevatedButtonThemeData(
-    style: ElevatedButton.styleFrom(
-      foregroundColor: Colors.black,
-      backgroundColor: Colors.teal,
+
+  appBarTheme: const AppBarTheme(
+    elevation: 0,
+    centerTitle: false,
+    backgroundColor: Color(0xFF161B22),
+    foregroundColor: Colors.white,
+  ),
+
+  cardTheme: CardTheme(
+    elevation: 0,
+    color: const Color(0xFF161B22),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(16),
+      side: const BorderSide(color: Color(0xFF2B3240)),
     ),
   ),
-  // colorScheme: ColorScheme.dark(primary: Colors.teal, secondary: Colors.orange),
-);
 
+  dividerTheme: const DividerThemeData(
+    color: Color(0xFF2B3240),
+    thickness: 1,
+  ),
+
+  chipTheme: ChipThemeData(
+    backgroundColor: const Color(0xFF1B212B),
+    selectedColor: const Color(0xFF244A7C),
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    labelStyle: const TextStyle(color: Colors.white),
+  ),
+
+  inputDecorationTheme: InputDecorationTheme(
+    filled: true,
+    fillColor: const Color(0xFF161B22),
+    border: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(14),
+      borderSide: const BorderSide(color: Color(0xFF2B3240)),
+    ),
+  ),
+);
 
 ================================================================================
 FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\theme\lighttheme.dart
@@ -1781,40 +1860,39 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     _sub = Connector()
         .dataStreamFor(widget.backend)
         .listen(
-        (SensorPacket packet) {
+      (SensorPacket packet) {
 
-          _packetCount++;
+        _packetCount++;
 
-          _handleSensorData(packet);
+        _handleSensorData(packet);
 
-          _needsRebuild = true;
+        _needsRebuild = true;
 
-          final line =
-              '[${DateTime.now().toIso8601String()}] '
-              '[${packet.sensorGroup}] '
-              'pacifier=${packet.pacifierId}, '
-              'type=${packet.sensorType}, '
-              'values=${packet.values}';
+        final line =
+            '[${DateTime.now().toIso8601String()}] '
+            '[${packet.sensorGroup}] '
+            'pacifier=${packet.pacifierId}, '
+            'type=${packet.sensorType}, '
+            'values=${packet.values}';
 
-          _logs.add(line);
+        _logs.add(line);
 
-          if (_logs.length > 200) {
-            _logs.removeAt(0);
+        if (_logs.length > 200) {
+          _logs.removeAt(0);
+        }
+
+        if (mounted) {
+          setState(() {});
+        }
+
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (_logScroll.hasClients) {
+            _logScroll.jumpTo(
+              _logScroll.position.maxScrollExtent,
+            );
           }
-
-          if (mounted) {
-            setState(() {});
-          }
-
-          /// auto-scroll logs
-          SchedulerBinding.instance.addPostFrameCallback((_) {
-            if (_logScroll.hasClients) {
-              _logScroll.jumpTo(
-                _logScroll.position.maxScrollExtent,
-              );
-            }
-          });
-        },
+        });
+      },
       onError: (e) {
         _logs.add('[${DateTime.now().toIso8601String()}] Error: $e');
         if (_logs.length > 200) _logs.removeAt(0);
@@ -1849,7 +1927,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     final typeMap = _buffers.putIfAbsent(
       packet.sensorType,
-          () => <String, Map<String, List<FlSpot>>>{},
+      () => <String, Map<String, List<FlSpot>>>{},
     );
 
     final groupName =
@@ -1857,7 +1935,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     final groupMap = typeMap.putIfAbsent(
       groupName,
-          () => <String, List<FlSpot>>{},
+      () => <String, List<FlSpot>>{},
     );
 
     packet.values.forEach((key, value) {
@@ -1867,7 +1945,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
       series.add(FlSpot(t, value.toDouble()));
 
-      if (series.length > 50) {
+      if (series.length > 300) {
         series.removeAt(0);
       }
     });
@@ -1884,6 +1962,98 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     _tabController.dispose();
     _logScroll.dispose();
     super.dispose();
+  }
+
+  Widget _buildLogCard(String line) {
+
+    final tsMatch = RegExp(r'^\[(.*?)\]').firstMatch(line);
+    final ts = tsMatch?.group(1) ?? '';
+
+    final pacMatch = RegExp(r'pacifier=(\d+)').firstMatch(line);
+    final pacifier = pacMatch?.group(1) ?? '?';
+
+    final typeMatch = RegExp(r'type=(\w+)').firstMatch(line);
+    final type = typeMatch?.group(1) ?? 'unknown';
+
+    final valuesMatch = RegExp(r'values=\{(.*)\}').firstMatch(line);
+    final values = valuesMatch?.group(1) ?? '';
+
+    Color typeColor;
+
+    switch (type) {
+      case 'pat':
+        typeColor = Colors.orange;
+        break;
+      case 'airflow':
+        typeColor = Colors.green;
+        break;
+      case 'imu':
+        typeColor = Colors.blue;
+        break;
+      default:
+        typeColor = Colors.grey;
+    }
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: typeColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                type.toUpperCase(),
+                style: TextStyle(
+                  color: typeColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  Text(
+                    'Pacifier $pacifier',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+
+                  const SizedBox(height: 2),
+
+                  Text(
+                    values,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+
+                  const SizedBox(height: 2),
+
+                  Text(
+                    ts,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -2041,10 +2211,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
               controller: _logScroll,
               padding: const EdgeInsets.all(8),
               itemCount: _logs.length,
-              itemBuilder: (_, i) =>
-                  Text(_logs[i],
-                      style:
-                      const TextStyle(fontSize: 12)),
+              itemBuilder: (_, i) => _buildLogCard(_logs[i]),
             ),
           ),
 
@@ -2155,7 +2322,7 @@ class GraphCreation {
         isCurved: true,
         curveSmoothness: 0.2,
         color: palette[i % palette.length],
-        barWidth: 4.0,
+        barWidth: 2.5,
         dotData: FlDotData(show: false),
         belowBarData: BarAreaData(
           show: true,
