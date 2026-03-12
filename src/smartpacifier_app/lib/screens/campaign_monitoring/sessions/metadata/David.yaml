@@ -1,0 +1,12 @@
+end_ts: '23:04:46'
+hdf5_file: session_1773093886150983424.h5
+patient:
+  age: 21
+  nationality: DE
+  patient_id: '0001'
+  patient_name: David
+protobuf:
+  name: sensor_data.proto
+  version: 1.0.0
+session_id: eb0d3d75-aca1-4c66-8e63-8612a3bfc4ae
+start_ts: '23:04:46'

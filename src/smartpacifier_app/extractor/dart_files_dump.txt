@@ -1695,7 +1695,6 @@ class SensorDeserializer {
 
     switch (sensorType) {
 
-      /// IMU SENSOR
       case "imu":
 
         final msg = protos.IMUData.fromBuffer(payload);
@@ -1712,7 +1711,6 @@ class SensorDeserializer {
 
         break;
 
-      /// AIRFLOW SENSOR
       case "airflow":
 
         final msg = protos.AIRFLOWData.fromBuffer(payload);
@@ -1731,7 +1729,6 @@ class SensorDeserializer {
 
         break;
 
-      /// PRESSURE + TEMPERATURE SENSOR
       case "pat":
 
         final msg = protos.PTData.fromBuffer(payload);
@@ -1750,6 +1747,7 @@ class SensorDeserializer {
       sensorType: sensorType,
       sensorGroup: group,
       values: values,
+      timestamp: DateTime.now(),   // ✅ timestamp added here
     );
   }
 }
@@ -1763,11 +1761,15 @@ class SensorPacket {
   final String sensorGroup;
   final Map<String, num> values;
 
+  /// timestamp when packet was received by the app
+  final DateTime timestamp;
+
   SensorPacket({
     required this.pacifierId,
     required this.sensorType,
     required this.sensorGroup,
     required this.values,
+    required this.timestamp,
   });
 }
 
@@ -1817,6 +1819,9 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
   late final Ticker _ticker;
   bool _needsRebuild = false;
 
+  /// 🔴 Live values for badges
+  final Map<String, double> _liveValues = {};
+
   final List<Color> _palette = [
     Colors.blue,
     Colors.red,
@@ -1836,6 +1841,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     _tabController = TabController(length: 2, vsync: this);
 
+    /// GPU smooth rendering ticker
     _ticker = createTicker((_) {
       if (_needsRebuild && mounted) {
         _frameCount++;
@@ -1945,9 +1951,14 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
       series.add(FlSpot(t, value.toDouble()));
 
+      /// keep sliding window (oscilloscope style)
       if (series.length > 300) {
         series.removeAt(0);
       }
+
+      /// update live value
+      _liveValues['${packet.sensorType}_$key'] =
+          value.toDouble();
     });
   }
 
@@ -1962,6 +1973,30 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     _tabController.dispose();
     _logScroll.dispose();
     super.dispose();
+  }
+
+  Widget _buildLiveBadge(String label) {
+
+    final value = _liveValues[label];
+
+    if (value == null) return const SizedBox();
+
+    return Container(
+      margin: const EdgeInsets.only(left: 8),
+      padding: const EdgeInsets.symmetric(
+          horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        value.toStringAsFixed(2),
+        style: const TextStyle(
+            fontSize: 11,
+            color: Colors.white,
+            fontWeight: FontWeight.bold),
+      ),
+    );
   }
 
   Widget _buildLogCard(String line) {
@@ -2105,6 +2140,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
         controller: _tabController,
         children: [
 
+          /// GPU accelerated rendering
           RepaintBoundary(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2153,12 +2189,20 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
                           padding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 8),
-                          child: Text(
-                            'Pacifier $id',
-                            style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight:
-                                FontWeight.bold),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Pacifier $id',
+                                style: const TextStyle(
+                                    fontSize: 20,
+                                    fontWeight:
+                                    FontWeight.bold),
+                              ),
+                              const SizedBox(width: 10),
+                              _buildLiveBadge('pat_pressure'),
+                              _buildLiveBadge('pat_temperature'),
+                              _buildLiveBadge('airflow_raw_e'),
+                            ],
                           ),
                         ),
 
@@ -2231,20 +2275,26 @@ import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class GraphCreation {
+
   /// [buffers]: sensorType → groupName → seriesName → spots
   /// [palette]: list of colors to cycle through
   static Widget buildGraphs(
       Map<String, Map<String, Map<String, List<FlSpot>>>> buffers,
       List<Color> palette,
       ) {
+
     final children = <Widget>[];
 
     buffers.forEach((sensorType, groups) {
+
       children.add(Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Text(
           sensorType.toUpperCase(),
-          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold
+          ),
         ),
       ));
 
@@ -2254,16 +2304,22 @@ class GraphCreation {
       }
 
       final measurementMap = <String, Map<String, List<FlSpot>>>{};
+
       combined.forEach((seriesName, spots) {
+
         final measurement = seriesName.split(RegExp(r'[_\[]')).first;
+
         measurementMap
             .putIfAbsent(measurement, () => <String, List<FlSpot>>{})[seriesName] =
             spots;
       });
 
       final measurements = measurementMap.keys.toList()..sort();
+
       for (final measurement in measurements) {
+
         final subSeries = measurementMap[measurement]!;
+
         children.add(Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           child: _buildChartCard(measurement, subSeries, palette),
@@ -2285,60 +2341,111 @@ class GraphCreation {
       Map<String, List<FlSpot>> seriesMap,
       List<Color> palette,
       ) {
-    // 1) Collect & clamp Y values for auto-scaling
+
     final rawYs = seriesMap.values.expand((s) => s.map((pt) => pt.y)).toList();
+
     double meanY = 0, stdY = 0;
+
     if (rawYs.isNotEmpty) {
       meanY = rawYs.reduce((a, b) => a + b) / rawYs.length;
+
       final varSum = rawYs
           .map((y) => pow(y - meanY, 2))
           .reduce((a, b) => a + b) /
           rawYs.length;
+
       stdY = sqrt(varSum);
     }
-    final minClip = meanY - 3 * stdY, maxClip = meanY + 3 * stdY;
+
+    final minClip = meanY - 3 * stdY;
+    final maxClip = meanY + 3 * stdY;
+
     final clippedYs = rawYs.map((y) => y.clamp(minClip, maxClip)).toList();
+
     double minY = clippedYs.isEmpty ? 0 : clippedYs.reduce(min);
     double maxY = clippedYs.isEmpty ? 1 : clippedYs.reduce(max);
-    final pad = (maxY - minY) * 0.05;
-    final axisMinY = minY - pad, axisMaxY = maxY + pad;
 
-    // 2) Invert X-axis if desired
+    final pad = (maxY - minY) * 0.1;
+
+    final axisMinY = minY - pad;
+    final axisMaxY = maxY + pad;
+
     final allXs = seriesMap.values.expand((s) => s.map((pt) => pt.x));
     final maxX = allXs.isEmpty ? 0.0 : allXs.reduce(max);
 
-    // 3) Build each LineChartBarData
     final seriesNames = seriesMap.keys.toList()..sort();
+
     final bars = <LineChartBarData>[];
 
     for (var i = 0; i < seriesNames.length; i++) {
+
       final orig = seriesMap[seriesNames[i]]!;
+
       final processed = orig
           .map((pt) => FlSpot(maxX - pt.x, pt.y.clamp(minClip, maxClip)))
           .toList(growable: false);
 
+      final baseColor = palette[i % palette.length];
+
       bars.add(LineChartBarData(
         spots: processed,
         isCurved: true,
-        curveSmoothness: 0.2,
-        color: palette[i % palette.length],
-        barWidth: 2.5,
-        dotData: FlDotData(show: false),
+        curveSmoothness: 0.35,
+        barWidth: 3,
+        gradient: LinearGradient(
+          colors: [
+            baseColor,
+            baseColor.withOpacity(0.6),
+          ],
+        ),
+
+        dotData: FlDotData(
+          show: true,
+          checkToShowDot: (spot, barData) =>
+          spot == barData.spots.last,
+          getDotPainter: (spot, percent, bar, index) {
+            return FlDotCirclePainter(
+              radius: 4,
+              color: baseColor,
+              strokeWidth: 2,
+              strokeColor: Colors.white,
+            );
+          },
+        ),
+
         belowBarData: BarAreaData(
           show: true,
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              palette[i % palette.length].withOpacity(0.3),
-              palette[i % palette.length].withOpacity(0.0),
+              baseColor.withOpacity(0.25),
+              baseColor.withOpacity(0.0),
             ],
           ),
         ),
       ));
     }
 
-    // 4) Legend
+    final tooltipIndicators = <ShowingTooltipIndicators>[];
+
+    for (var i = 0; i < bars.length; i++) {
+
+      final spots = bars[i].spots;
+
+      if (spots.isNotEmpty) {
+        tooltipIndicators.add(
+          ShowingTooltipIndicators([
+            LineBarSpot(
+              bars[i],
+              i,
+              spots.last,
+            )
+          ]),
+        );
+      }
+    }
+
     final legend = Wrap(
       spacing: 12,
       runSpacing: 4,
@@ -2351,12 +2458,18 @@ class GraphCreation {
                 width: 10,
                 height: 10,
                 decoration: BoxDecoration(
-                  color: palette[i % palette.length],
+                  gradient: LinearGradient(
+                    colors: [
+                      palette[i % palette.length],
+                      palette[i % palette.length].withOpacity(0.6)
+                    ],
+                  ),
                   shape: BoxShape.circle,
                 ),
               ),
               const SizedBox(width: 4),
-              Text(seriesNames[i], style: const TextStyle(fontSize: 12)),
+              Text(seriesNames[i],
+                  style: const TextStyle(fontSize: 12)),
             ],
           )
         ]
@@ -2364,68 +2477,107 @@ class GraphCreation {
     );
 
     return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 8,
+      shadowColor: Colors.black26,
+      shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20)),
       child: Padding(
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
+
+            Text(title,
+                style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15
+                )),
+
             const SizedBox(height: 6),
+
             legend,
+
             const SizedBox(height: 10),
+
             SizedBox(
-              height: 160,
+              height: 180,
               child: LineChart(
                 LineChartData(
+
                   minY: axisMinY,
                   maxY: axisMaxY,
+
                   lineBarsData: bars,
+
+                  showingTooltipIndicators: tooltipIndicators,
+
                   gridData: FlGridData(
                     show: true,
                     drawVerticalLine: true,
                     drawHorizontalLine: true,
                     getDrawingVerticalLine: (_) => FlLine(
-                      color: Colors.grey.withOpacity(0.2),
+                      color: Colors.grey.withOpacity(0.15),
                       strokeWidth: 1,
                       dashArray: [4, 4],
                     ),
                     getDrawingHorizontalLine: (_) => FlLine(
-                      color: Colors.grey.withOpacity(0.2),
+                      color: Colors.grey.withOpacity(0.15),
                       strokeWidth: 1,
                       dashArray: [4, 4],
                     ),
                   ),
+
                   titlesData: FlTitlesData(show: false),
+
                   borderData: FlBorderData(show: false),
 
-                  // --- Corrected Tooltip Configuration ---
                   lineTouchData: LineTouchData(
                     enabled: true,
+                    handleBuiltInTouches: true,
                     touchTooltipData: LineTouchTooltipData(
+
                       getTooltipColor: (_) => Colors.black87,
-                      tooltipBorderRadius: BorderRadius.circular(6),
-                      tooltipPadding: const EdgeInsets.all(6),
+
+                      tooltipBorderRadius:
+                      BorderRadius.circular(8),
+
+                      tooltipPadding:
+                      const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6),
+
                       fitInsideHorizontally: true,
                       fitInsideVertically: true,
+
                       getTooltipItems: (spots) {
+
                         return spots.map((spot) {
-                          final name = seriesNames[spot.barIndex];
-                          final y = spot.y.toStringAsFixed(3);
+
+                          final name =
+                          seriesNames[spot.barIndex];
+
+                          final y =
+                          spot.y.toStringAsFixed(3);
+
                           return LineTooltipItem(
                             '$name: $y',
                             TextStyle(
-                              color: spot.bar.color,
+                              color: spot.bar.gradient
+                                  ?.colors
+                                  .first ??
+                                  Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 12,
+                              fontSize: 13,
                             ),
                           );
+
                         }).toList();
                       },
                     ),
                   ),
                 ),
+                duration: const Duration(milliseconds: 250),
+                curve: Curves.easeOutCubic,
               ),
             ),
           ],
@@ -2435,7 +2587,6 @@ class GraphCreation {
   }
 }
 
-
 ================================================================================
 FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\campaign_monitoring\campaigncreation.dart
 ================================================================================
@@ -2444,8 +2595,10 @@ FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\campai
 import 'dart:async';
 import 'dart:io';
 
+import 'package:file_selector/file_selector.dart';
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../client_layer/connector.dart';
 import '../../ipc_layer/mqtt/sensor_packet.dart';
@@ -2476,6 +2629,8 @@ class _CampaignCreationState extends State<CampaignCreation>
 
   late final TabController _tabs;
 
+  final ScrollController _logScroll = ScrollController();
+
   int _nextX = 0;
 
   final _buffers = <String, Map<String, Map<String, List<FlSpot>>>>{};
@@ -2495,6 +2650,34 @@ class _CampaignCreationState extends State<CampaignCreation>
     Colors.lime,
   ];
 
+  /// SESSION VARIABLES
+  String? _sessionId;
+  String? _hdf5FileName;
+  DateTime? _startTime;
+  File? _hdf5File;
+
+  Process? _pythonRecorder;
+
+  final Directory _sessionBase =
+      Directory('lib/screens/campaign_monitoring/sessions');
+
+  Directory get _dataDir =>
+      Directory('${_sessionBase.path}/data');
+
+  Directory get _metaDir =>
+      Directory('${_sessionBase.path}/metadata');
+
+  Future<void> _ensureFolders() async {
+
+    if (!await _dataDir.exists()) {
+      await _dataDir.create(recursive: true);
+    }
+
+    if (!await _metaDir.exists()) {
+      await _metaDir.create(recursive: true);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -2513,11 +2696,24 @@ class _CampaignCreationState extends State<CampaignCreation>
     });
   }
 
-  void _startCampaign() {
+  /// ================================
+  /// START CAMPAIGN
+  /// ================================
+
+  void _startCampaign() async {
 
     if (_campaignController.text.trim().isEmpty || _selected.isEmpty) {
       return;
     }
+
+    await _ensureFolders();
+    _pythonRecorder = await Process.start(
+      "python",
+      [
+        "lib/screens/campaign_monitoring/sessions/python_scripts/recorder.py"
+      ],
+      mode: ProcessStartMode.detached,
+    );
 
     _buffers.clear();
     _logs.clear();
@@ -2540,13 +2736,17 @@ class _CampaignCreationState extends State<CampaignCreation>
 
     _renderTimer = Timer.periodic(
       const Duration(milliseconds: 33),
-          (_) {
+      (_) {
         if (mounted) setState(() {});
       },
     );
 
     setState(() => _inCampaign = true);
   }
+
+  /// ================================
+  /// WRITE DATA
+  /// ================================
 
   void _onData(SensorPacket packet) {
 
@@ -2557,35 +2757,77 @@ class _CampaignCreationState extends State<CampaignCreation>
     }
 
     final typeMap =
-    _buffers.putIfAbsent(packet.sensorType, () => {});
+        _buffers.putIfAbsent(packet.sensorType, () => {});
 
     final groupName =
         '${packet.sensorGroup}_${packet.pacifierId}';
 
     final groupMap =
-    typeMap.putIfAbsent(groupName, () => {});
+        typeMap.putIfAbsent(groupName, () => {});
 
-    /// add sensor values
     packet.values.forEach((key, value) {
 
       final s = groupMap.putIfAbsent(key, () => []);
 
       s.add(FlSpot(t, value.toDouble()));
 
-      if (s.length > 50) {
+      if (s.length > 300) {
         s.removeAt(0);
       }
 
     });
 
-    /// logging
-    _logs.add(
-      '[${DateTime.now().toIso8601String()}] '
-          'pacifier=${packet.pacifierId}, '
-          'type=${packet.sensorType}, '
-          'group=${packet.sensorGroup}, '
-          'values=${packet.values}',
-    );
+    /// log line
+    final line =
+        '[${DateTime.now().toIso8601String()}] '
+        '[${packet.sensorGroup}] '
+        'pacifier=${packet.pacifierId}, '
+        'type=${packet.sensorType}, '
+        'values=${packet.values}';
+
+    _logs.add(line);
+
+    if (_logs.length > 500) {
+      _logs.removeAt(0);
+    }
+
+    /// auto scroll logs
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_logScroll.hasClients) {
+        _logScroll.jumpTo(
+          _logScroll.position.maxScrollExtent,
+        );
+      }
+    });
+  }
+
+  /// ================================
+  /// WRITE METADATA
+  /// ================================
+
+  Future<void> _writeMetadata() async {
+
+    final end = DateTime.now();
+
+    final yaml = '''
+session_id: $_sessionId
+start_ts: '${_startTime!.toLocal().toString().split(' ')[1]}'
+end_ts: '${end.toLocal().toString().split(' ')[1]}'
+patient:
+  patient_id: '0001'
+  patient_name: ${_campaignController.text}
+  age: 21
+  nationality: DE
+protobuf:
+  name: sensor_data.proto
+  version: 1.0.0
+hdf5_file: $_hdf5FileName
+''';
+
+    final file = File(
+        "${_metaDir.path}/${_campaignController.text}.yaml");
+
+    await file.writeAsString(yaml);
   }
 
   void _onDoneOrError(String message) {
@@ -2593,6 +2835,10 @@ class _CampaignCreationState extends State<CampaignCreation>
     _sub?.cancel();
 
     _renderTimer?.cancel();
+
+    _pythonRecorder?.kill();
+
+    _writeMetadata(); 
 
     if (mounted) {
 
@@ -2613,81 +2859,71 @@ class _CampaignCreationState extends State<CampaignCreation>
     }
   }
 
+  /// ================================
+  /// SAVE CAMPAIGN
+  /// ================================
+
   Future<void> _endCampaign() async {
 
-    final pathCtrl = TextEditingController();
-
-    String? errorText;
-
-    final result = await showDialog<String>(
+    final platform = await showDialog<String>(
 
       context: context,
 
-      builder: (ctx) => StatefulBuilder(
+      builder: (ctx) => AlertDialog(
 
-        builder: (ctx2, setInner) => AlertDialog(
+        title: const Text("Where are you saving?"),
 
-          title: const Text('Save Campaign Logs'),
+        content: const Text(
+            "Select your operating system"),
 
-          content: TextField(
-            controller: pathCtrl,
-            decoration: InputDecoration(
-              labelText: 'Full file path',
-              hintText:
-              '/home/user/camp.txt or C:\\Logs\\camp.txt',
-              errorText: errorText,
-            ),
-          ),
+        actions: [
 
-          actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, "windows"),
+              child: const Text("Windows")),
 
-            TextButton(
-                onPressed: () => Navigator.pop(ctx2),
-                child: const Text('Cancel')),
-
-            ElevatedButton(
-              onPressed: () {
-
-                final p = pathCtrl.text.trim();
-
-                if (p.isEmpty ||
-                    !p.toLowerCase().endsWith('.txt')) {
-
-                  setInner(() => errorText =
-                  'Path must end with ".txt"');
-
-                  return;
-                }
-
-                final dir = Directory(p).parent;
-
-                if (!dir.existsSync()) {
-
-                  setInner(() => errorText =
-                  'Directory does not exist');
-
-                  return;
-                }
-
-                Navigator.pop(ctx2, p);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, "linux"),
+              child: const Text("Linux")),
+        ],
       ),
     );
 
-    if (result == null) return;
+    if (platform == null) return;
+
+    if (platform == "windows") {
+
+      await _saveWindows();
+
+    } else {
+
+      await _saveLinux();
+    }
+  }
+
+  /// Windows file browser
+  Future<void> _saveWindows() async {
+
+    const typeGroup = XTypeGroup(
+      label: 'text',
+      extensions: ['txt'],
+    );
+
+    final file = await getSaveLocation(
+      suggestedName: 'campaign_logs.txt',
+      acceptedTypeGroups: [typeGroup],
+    );
+
+    if (file == null) return;
+
+    final path = file.path;
 
     try {
 
-      File(result)
-        ..createSync(recursive: true)
-        ..writeAsStringSync(
-          _logs.join('\n') + '\n',
-          mode: FileMode.append,
-        );
+      File(path).writeAsStringSync(
+        _logs.join('\n') + '\n',
+        mode: FileMode.append,
+      );
 
       _onDoneOrError('Logs saved, campaign ended');
 
@@ -2697,6 +2933,162 @@ class _CampaignCreationState extends State<CampaignCreation>
         SnackBar(content: Text('Save failed: $e')),
       );
     }
+  }
+
+  /// Linux manual path
+  Future<void> _saveLinux() async {
+
+    final pathCtrl = TextEditingController();
+
+    final result = await showDialog<String>(
+
+      context: context,
+
+      builder: (ctx) => AlertDialog(
+
+        title: const Text("Enter Linux file path"),
+
+        content: TextField(
+          controller: pathCtrl,
+          decoration: const InputDecoration(
+            hintText: "/home/user/logs/campaign.txt",
+          ),
+        ),
+
+        actions: [
+
+          TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text("Cancel")),
+
+          ElevatedButton(
+            onPressed: () {
+
+              final p = pathCtrl.text.trim();
+
+              if (!p.endsWith(".txt")) return;
+
+              Navigator.pop(ctx, p);
+            },
+            child: const Text("Save"),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null) return;
+
+    try {
+
+      File(result).writeAsStringSync(
+        _logs.join('\n') + '\n',
+        mode: FileMode.append,
+      );
+
+      _onDoneOrError('Logs saved, campaign ended');
+
+    } catch (e) {
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Save failed: $e')),
+      );
+    }
+  }
+
+  /// ================================
+  /// UI (UNCHANGED)
+  /// ================================
+
+  Widget _buildLogCard(String line) {
+
+    final tsMatch = RegExp(r'^\[(.*?)\]').firstMatch(line);
+    final ts = tsMatch?.group(1) ?? '';
+
+    final pacMatch = RegExp(r'pacifier=(\d+)').firstMatch(line);
+    final pacifier = pacMatch?.group(1) ?? '?';
+
+    final typeMatch = RegExp(r'type=(\w+)').firstMatch(line);
+    final type = typeMatch?.group(1) ?? 'unknown';
+
+    final valuesMatch = RegExp(r'values=\{(.*)\}').firstMatch(line);
+    final values = valuesMatch?.group(1) ?? '';
+
+    Color typeColor;
+
+    switch (type) {
+      case 'pat':
+        typeColor = Colors.orange;
+        break;
+      case 'airflow':
+        typeColor = Colors.green;
+        break;
+      case 'imu':
+        typeColor = Colors.blue;
+        break;
+      default:
+        typeColor = Colors.grey;
+    }
+
+    return Card(
+      elevation: 2,
+      margin: const EdgeInsets.symmetric(vertical: 3),
+      child: Padding(
+        padding: const EdgeInsets.all(8),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: typeColor.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                type.toUpperCase(),
+                style: TextStyle(
+                  color: typeColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+
+            const SizedBox(width: 10),
+
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+
+                  Text(
+                    'Pacifier $pacifier',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+
+                  const SizedBox(height: 2),
+
+                  Text(
+                    values,
+                    style: const TextStyle(fontSize: 12),
+                  ),
+
+                  const SizedBox(height: 2),
+
+                  Text(
+                    ts,
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   @override
@@ -2710,11 +3102,17 @@ class _CampaignCreationState extends State<CampaignCreation>
 
     _tabs.dispose();
 
+    _logScroll.dispose();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+
+    final pacs = _selected.toList()
+      ..sort((a, b) => int.parse(a)
+          .compareTo(int.parse(b)));
 
     if (!_inCampaign) {
 
@@ -2781,10 +3179,6 @@ class _CampaignCreationState extends State<CampaignCreation>
       );
     }
 
-    final pacs = _selected.toList()
-      ..sort((a, b) => int.parse(a)
-          .compareTo(int.parse(b)));
-
     return Scaffold(
 
       appBar: AppBar(
@@ -2815,98 +3209,68 @@ class _CampaignCreationState extends State<CampaignCreation>
 
         children: [
 
-          Column(
-            children: [
+          ListView(
+            children: pacs.expand((id) {
 
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.all(8),
+              return [
 
-                child: Row(
-                  children: pacs.map((id) {
+                Padding(
+                  padding:
+                  const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8),
 
-                    return Padding(
-
-                      padding:
-                      const EdgeInsets.only(right: 8),
-
-                      child: FilterChip(
-                          label: Text('Pacifier $id'),
-                          selected: true,
-                          onSelected: (_) {}),
-                    );
-
-                  }).toList(),
+                  child: Text(
+                    'Pacifier $id',
+                    style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight:
+                        FontWeight.bold),
+                  ),
                 ),
-              ),
 
-              Expanded(
-                child: ListView(
-                  children: pacs.expand((id) {
+                Builder(builder: (_) {
 
-                    return [
+                  final filtered = <String,
+                      Map<String,
+                          Map<String,
+                              List<FlSpot>>>>{};
 
-                      Padding(
-                        padding:
-                        const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8),
+                  _buffers.forEach((stype, groups) {
 
-                        child: Text(
-                          'Pacifier $id',
-                          style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight:
-                              FontWeight.bold),
-                        ),
-                      ),
+                    final sub =
+                    <String,
+                        Map<String,
+                            List<FlSpot>>>{};
 
-                      Builder(builder: (_) {
+                    groups.forEach((gname, series) {
 
-                        final filtered = <String,
-                            Map<String,
-                                Map<String,
-                                    List<FlSpot>>>>{};
+                      if (gname.endsWith('_$id')) {
+                        sub[gname] = series;
+                      }
 
-                        _buffers.forEach((stype, groups) {
+                    });
 
-                          final sub =
-                          <String,
-                              Map<String,
-                                  List<FlSpot>>>{};
+                    if (sub.isNotEmpty) {
+                      filtered[stype] = sub;
+                    }
+                  });
 
-                          groups.forEach((gname, series) {
+                  return GraphCreation
+                      .buildGraphs(
+                      filtered, _palette);
+                }),
+              ];
 
-                            if (gname.endsWith('_$id')) {
-                              sub[gname] = series;
-                            }
-
-                          });
-
-                          if (sub.isNotEmpty) {
-                            filtered[stype] = sub;
-                          }
-                        });
-
-                        return GraphCreation
-                            .buildGraphs(
-                            filtered, _palette);
-                      }),
-                    ];
-
-                  }).toList(),
-                ),
-              ),
-            ],
+            }).toList(),
           ),
 
           ListView.builder(
+            controller: _logScroll,
             padding: const EdgeInsets.all(8),
             itemCount: _logs.length,
             itemBuilder: (_, i) =>
-                Text(_logs[i],
-                    style:
-                    const TextStyle(fontSize: 12)),
+                _buildLogCard(_logs[i]),
           ),
         ],
       ),
@@ -3327,4 +3691,33 @@ class ConfigExtractor {
   }
 }
 
+
+================================================================================
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\utils\session_paths.dart
+================================================================================
+import 'dart:io';
+import 'package:path/path.dart' as p;
+
+class SessionPaths {
+
+  static final base = Directory(
+    'lib/screens/campaign_monitoring/sessions',
+  );
+
+  static Directory get dataDir =>
+      Directory(p.join(base.path, 'data'));
+
+  static Directory get metadataDir =>
+      Directory(p.join(base.path, 'metadata'));
+
+  static Future<void> ensure() async {
+    if (!await dataDir.exists()) {
+      await dataDir.create(recursive: true);
+    }
+
+    if (!await metadataDir.exists()) {
+      await metadataDir.create(recursive: true);
+    }
+  }
+}
 

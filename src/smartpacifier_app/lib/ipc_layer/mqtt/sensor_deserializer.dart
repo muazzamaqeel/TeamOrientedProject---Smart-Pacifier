@@ -24,7 +24,6 @@ class SensorDeserializer {
 
     switch (sensorType) {
 
-      /// IMU SENSOR
       case "imu":
 
         final msg = protos.IMUData.fromBuffer(payload);
@@ -41,7 +40,6 @@ class SensorDeserializer {
 
         break;
 
-      /// AIRFLOW SENSOR
       case "airflow":
 
         final msg = protos.AIRFLOWData.fromBuffer(payload);
@@ -60,7 +58,6 @@ class SensorDeserializer {
 
         break;
 
-      /// PRESSURE + TEMPERATURE SENSOR
       case "pat":
 
         final msg = protos.PTData.fromBuffer(payload);
@@ -79,6 +76,7 @@ class SensorDeserializer {
       sensorType: sensorType,
       sensorGroup: group,
       values: values,
+      timestamp: DateTime.now(),   // ✅ timestamp added here
     );
   }
 }
