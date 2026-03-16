@@ -1,6 +1,7 @@
 // File: lib/screens/campaign_monitoring/campaigncreation.dart
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:file_selector/file_selector.dart';
@@ -65,6 +66,7 @@ class _CampaignCreationState extends State<CampaignCreation>
   File? _hdf5File;
 
   Process? _pythonRecorder;
+  bool _isStoppingCampaign = false;
 
   final Directory _sessionBase =
       Directory('lib/screens/campaign_monitoring/sessions');
@@ -105,6 +107,65 @@ class _CampaignCreationState extends State<CampaignCreation>
   }
 
   /// ================================
+  /// HDF5 HELPERS
+  /// ================================
+
+  Future<void> _initializeHdf5File() async {
+    if (_hdf5File == null || _sessionId == null || _startTime == null) {
+      return;
+    }
+
+    final escapedPath = _hdf5File!.path.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+    final escapedSessionId = _sessionId!.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+    final escapedPatientName = _campaignController.text.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+    final escapedBackend = widget.backend.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+    final startIso = _startTime!.toIso8601String();
+
+    final script = '''
+import h5py
+
+file_path = r"$escapedPath"
+f = h5py.File(file_path, "w")
+
+f.attrs["session_id"] = "$escapedSessionId"
+f.attrs["start_ts"] = "$startIso"
+f.attrs["patient_name"] = "$escapedPatientName"
+f.attrs["backend"] = "$escapedBackend"
+f.attrs["protobuf"] = "sensor_data.proto"
+
+f.close()
+''';
+
+    final result = await Process.run("python", ["-c", script]);
+
+    if (result.exitCode != 0) {
+      throw Exception(
+        'Failed to initialize HDF5 file: ${result.stderr}',
+      );
+    }
+  }
+
+  Future<void> _finalizeHdf5File() async {
+    if (_hdf5File == null) return;
+
+    final end = DateTime.now();
+
+    final escapedPath = _hdf5File!.path.replaceAll(r'\', r'\\').replaceAll('"', r'\"');
+    final endIso = end.toIso8601String();
+
+    final script = '''
+import h5py
+
+file_path = r"$escapedPath"
+f = h5py.File(file_path, "a")
+f.attrs["end_ts"] = "$endIso"
+f.close()
+''';
+
+    await Process.run("python", ["-c", script]);
+  }
+
+  /// ================================
   /// START CAMPAIGN
   /// ================================
 
@@ -115,17 +176,39 @@ class _CampaignCreationState extends State<CampaignCreation>
     }
 
     await _ensureFolders();
+
+    _sessionId = const Uuid().v4();
+    _startTime = DateTime.now();
+
+    _hdf5FileName = "${_campaignController.text}_${_sessionId}_data.h5";
+
+    final path = "${_dataDir.path}/$_hdf5FileName";
+
+    _hdf5File = File(path);
+
+    try {
+      await _initializeHdf5File();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to create HDF5 file: $e')),
+        );
+      }
+      return;
+    }
+
     _pythonRecorder = await Process.start(
       "python",
       [
-        "lib/screens/campaign_monitoring/sessions/python_scripts/recorder.py"
+        "lib/screens/campaign_monitoring/sessions/python_scripts/recorder.py",
+        path
       ],
-      mode: ProcessStartMode.detached,
     );
 
     _buffers.clear();
     _logs.clear();
     _nextX = 0;
+    _isStoppingCampaign = false;
 
     _sub = Connector()
         .dataStreamFor(widget.backend)
@@ -152,6 +235,20 @@ class _CampaignCreationState extends State<CampaignCreation>
     setState(() => _inCampaign = true);
   }
 
+  void _sendPacketToPython(SensorPacket packet) {
+
+    if (_pythonRecorder == null) return;
+
+    final payload = jsonEncode({
+      "sensor": packet.sensorType,
+      "pacifier": packet.pacifierId,
+      "timestamp": packet.timestamp.millisecondsSinceEpoch / 1000.0,
+      "values": packet.values
+    });
+
+    _pythonRecorder!.stdin.writeln(payload);
+  }
+
   /// ================================
   /// WRITE DATA
   /// ================================
@@ -163,6 +260,8 @@ class _CampaignCreationState extends State<CampaignCreation>
     if (!_selected.contains(packet.pacifierId)) {
       return;
     }
+
+    _sendPacketToPython(packet);
 
     final typeMap =
         _buffers.putIfAbsent(packet.sensorType, () => {});
@@ -214,57 +313,60 @@ class _CampaignCreationState extends State<CampaignCreation>
   /// ================================
 
   Future<void> _writeMetadata() async {
+    await _finalizeHdf5File();
+  }
 
-    final end = DateTime.now();
+  Future<void> _stopRecorderAndFinalize() async {
+    if (_isStoppingCampaign) return;
+    _isStoppingCampaign = true;
 
-    final yaml = '''
-session_id: $_sessionId
-start_ts: '${_startTime!.toLocal().toString().split(' ')[1]}'
-end_ts: '${end.toLocal().toString().split(' ')[1]}'
-patient:
-  patient_id: '0001'
-  patient_name: ${_campaignController.text}
-  age: 21
-  nationality: DE
-protobuf:
-  name: sensor_data.proto
-  version: 1.0.0
-hdf5_file: $_hdf5FileName
-''';
+    _sub?.cancel();
+    _renderTimer?.cancel();
 
-    final file = File(
-        "${_metaDir.path}/${_campaignController.text}.yaml");
+    final recorder = _pythonRecorder;
+    _pythonRecorder = null;
 
-    await file.writeAsString(yaml);
+    if (recorder != null) {
+      try {
+        await recorder.stdin.flush();
+      } catch (_) {}
+
+      try {
+        await recorder.stdin.close();
+      } catch (_) {}
+
+      try {
+        await recorder.exitCode.timeout(const Duration(seconds: 3));
+      } catch (_) {
+        try {
+          recorder.kill();
+        } catch (_) {}
+      }
+    }
+
+    await _writeMetadata();
   }
 
   void _onDoneOrError(String message) {
+    _stopRecorderAndFinalize().then((_) {
+      if (mounted) {
 
-    _sub?.cancel();
+        setState(() {
 
-    _renderTimer?.cancel();
+          _inCampaign = false;
 
-    _pythonRecorder?.kill();
+          _selected.clear();
 
-    _writeMetadata(); 
+          _buffers.clear();
 
-    if (mounted) {
+          _logs.clear();
+        });
 
-      setState(() {
-
-        _inCampaign = false;
-
-        _selected.clear();
-
-        _buffers.clear();
-
-        _logs.clear();
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
-    }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message)),
+        );
+      }
+    });
   }
 
   /// ================================

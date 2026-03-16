@@ -94,6 +94,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
         _handleSensorData(packet);
 
+        /// schedule UI rebuild via ticker (NOT per packet)
         _needsRebuild = true;
 
         final line =
@@ -107,10 +108,6 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
         if (_logs.length > 200) {
           _logs.removeAt(0);
-        }
-
-        if (mounted) {
-          setState(() {});
         }
 
         SchedulerBinding.instance.addPostFrameCallback((_) {
@@ -174,7 +171,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
       series.add(FlSpot(t, value.toDouble()));
 
       /// keep sliding window (oscilloscope style)
-      if (series.length > 300) {
+      if (series.length > 150) {
         series.removeAt(0);
       }
 
@@ -362,7 +359,6 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
         controller: _tabController,
         children: [
 
-          /// GPU accelerated rendering
           RepaintBoundary(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
