@@ -163,21 +163,28 @@ class IMUData extends $pb.GeneratedMessage {
   IMUData_MotionVector ensureGyro() => $_ensure(2);
 }
 
-class PPGData_LedData extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PPGData.LedData', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Protos'), createEmptyInstance: create)
-    ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'led1', $pb.PbFieldType.O3, protoName: 'led_1')
-    ..a<$core.int>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'led2', $pb.PbFieldType.O3, protoName: 'led_2')
-    ..a<$core.int>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'led3', $pb.PbFieldType.O3, protoName: 'led_3')
+class PPGData extends $pb.GeneratedMessage {
+  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PPGData', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Protos'), createEmptyInstance: create)
+    ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'sensorId', $pb.PbFieldType.O3)
+    ..a<$core.int>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'led1', $pb.PbFieldType.O3, protoName: 'led_1')
+    ..a<$core.int>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'led2', $pb.PbFieldType.O3, protoName: 'led_2')
+    ..a<$core.int>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'led3', $pb.PbFieldType.O3, protoName: 'led_3')
+    ..a<$core.double>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'temperature', $pb.PbFieldType.OF)
     ..hasRequiredFields = false
   ;
 
-  PPGData_LedData._() : super();
-  factory PPGData_LedData({
+  PPGData._() : super();
+  factory PPGData({
+    $core.int? sensorId,
     $core.int? led1,
     $core.int? led2,
     $core.int? led3,
+    $core.double? temperature,
   }) {
     final _result = create();
+    if (sensorId != null) {
+      _result.sensorId = sensorId;
+    }
     if (led1 != null) {
       _result.led1 = led1;
     }
@@ -187,111 +194,11 @@ class PPGData_LedData extends $pb.GeneratedMessage {
     if (led3 != null) {
       _result.led3 = led3;
     }
-    return _result;
-  }
-  factory PPGData_LedData.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory PPGData_LedData.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  PPGData_LedData clone() => PPGData_LedData()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  PPGData_LedData copyWith(void Function(PPGData_LedData) updates) => super.copyWith((message) => updates(message as PPGData_LedData)) as PPGData_LedData; // ignore: deprecated_member_use
-  $pb.BuilderInfo get info_ => _i;
-  @$core.pragma('dart2js:noInline')
-  static PPGData_LedData create() => PPGData_LedData._();
-  PPGData_LedData createEmptyInstance() => create();
-  static $pb.PbList<PPGData_LedData> createRepeated() => $pb.PbList<PPGData_LedData>();
-  @$core.pragma('dart2js:noInline')
-  static PPGData_LedData getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PPGData_LedData>(create);
-  static PPGData_LedData? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $core.int get led1 => $_getIZ(0);
-  @$pb.TagNumber(1)
-  set led1($core.int v) { $_setSignedInt32(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasLed1() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearLed1() => clearField(1);
-
-  @$pb.TagNumber(2)
-  $core.int get led2 => $_getIZ(1);
-  @$pb.TagNumber(2)
-  set led2($core.int v) { $_setSignedInt32(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasLed2() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearLed2() => clearField(2);
-
-  @$pb.TagNumber(3)
-  $core.int get led3 => $_getIZ(2);
-  @$pb.TagNumber(3)
-  set led3($core.int v) { $_setSignedInt32(2, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasLed3() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearLed3() => clearField(3);
-}
-
-class PPGData_TemperatureData extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PPGData.TemperatureData', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Protos'), createEmptyInstance: create)
-    ..a<$core.double>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'temperature', $pb.PbFieldType.OF)
-    ..hasRequiredFields = false
-  ;
-
-  PPGData_TemperatureData._() : super();
-  factory PPGData_TemperatureData({
-    $core.double? temperature,
-  }) {
-    final _result = create();
     if (temperature != null) {
       _result.temperature = temperature;
     }
     return _result;
   }
-  factory PPGData_TemperatureData.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory PPGData_TemperatureData.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  PPGData_TemperatureData clone() => PPGData_TemperatureData()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  PPGData_TemperatureData copyWith(void Function(PPGData_TemperatureData) updates) => super.copyWith((message) => updates(message as PPGData_TemperatureData)) as PPGData_TemperatureData; // ignore: deprecated_member_use
-  $pb.BuilderInfo get info_ => _i;
-  @$core.pragma('dart2js:noInline')
-  static PPGData_TemperatureData create() => PPGData_TemperatureData._();
-  PPGData_TemperatureData createEmptyInstance() => create();
-  static $pb.PbList<PPGData_TemperatureData> createRepeated() => $pb.PbList<PPGData_TemperatureData>();
-  @$core.pragma('dart2js:noInline')
-  static PPGData_TemperatureData getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PPGData_TemperatureData>(create);
-  static PPGData_TemperatureData? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $core.double get temperature => $_getN(0);
-  @$pb.TagNumber(1)
-  set temperature($core.double v) { $_setFloat(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasTemperature() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearTemperature() => clearField(1);
-}
-
-class PPGData extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PPGData', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Protos'), createEmptyInstance: create)
-    ..hasRequiredFields = false
-  ;
-
-  PPGData._() : super();
-  factory PPGData() => create();
   factory PPGData.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
   factory PPGData.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
   @$core.Deprecated(
@@ -312,6 +219,51 @@ class PPGData extends $pb.GeneratedMessage {
   @$core.pragma('dart2js:noInline')
   static PPGData getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<PPGData>(create);
   static PPGData? _defaultInstance;
+
+  @$pb.TagNumber(1)
+  $core.int get sensorId => $_getIZ(0);
+  @$pb.TagNumber(1)
+  set sensorId($core.int v) { $_setSignedInt32(0, v); }
+  @$pb.TagNumber(1)
+  $core.bool hasSensorId() => $_has(0);
+  @$pb.TagNumber(1)
+  void clearSensorId() => clearField(1);
+
+  @$pb.TagNumber(2)
+  $core.int get led1 => $_getIZ(1);
+  @$pb.TagNumber(2)
+  set led1($core.int v) { $_setSignedInt32(1, v); }
+  @$pb.TagNumber(2)
+  $core.bool hasLed1() => $_has(1);
+  @$pb.TagNumber(2)
+  void clearLed1() => clearField(2);
+
+  @$pb.TagNumber(3)
+  $core.int get led2 => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set led2($core.int v) { $_setSignedInt32(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasLed2() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearLed2() => clearField(3);
+
+  @$pb.TagNumber(4)
+  $core.int get led3 => $_getIZ(3);
+  @$pb.TagNumber(4)
+  set led3($core.int v) { $_setSignedInt32(3, v); }
+  @$pb.TagNumber(4)
+  $core.bool hasLed3() => $_has(3);
+  @$pb.TagNumber(4)
+  void clearLed3() => clearField(4);
+
+  @$pb.TagNumber(5)
+  $core.double get temperature => $_getN(4);
+  @$pb.TagNumber(5)
+  set temperature($core.double v) { $_setFloat(4, v); }
+  @$pb.TagNumber(5)
+  $core.bool hasTemperature() => $_has(4);
+  @$pb.TagNumber(5)
+  void clearTemperature() => clearField(5);
 }
 
 class AIRFLOWData extends $pb.GeneratedMessage {
@@ -471,96 +423,6 @@ class AIRFLOWData extends $pb.GeneratedMessage {
   $core.bool hasTempE() => $_has(8);
   @$pb.TagNumber(9)
   void clearTempE() => clearField(9);
-}
-
-class TEMPERATUREData_VoltageData extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'TEMPERATUREData.VoltageData', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Protos'), createEmptyInstance: create)
-    ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'voltage10k', $pb.PbFieldType.O3)
-    ..a<$core.int>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'voltage1k', $pb.PbFieldType.O3)
-    ..hasRequiredFields = false
-  ;
-
-  TEMPERATUREData_VoltageData._() : super();
-  factory TEMPERATUREData_VoltageData({
-    $core.int? voltage10k,
-    $core.int? voltage1k,
-  }) {
-    final _result = create();
-    if (voltage10k != null) {
-      _result.voltage10k = voltage10k;
-    }
-    if (voltage1k != null) {
-      _result.voltage1k = voltage1k;
-    }
-    return _result;
-  }
-  factory TEMPERATUREData_VoltageData.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory TEMPERATUREData_VoltageData.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  TEMPERATUREData_VoltageData clone() => TEMPERATUREData_VoltageData()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  TEMPERATUREData_VoltageData copyWith(void Function(TEMPERATUREData_VoltageData) updates) => super.copyWith((message) => updates(message as TEMPERATUREData_VoltageData)) as TEMPERATUREData_VoltageData; // ignore: deprecated_member_use
-  $pb.BuilderInfo get info_ => _i;
-  @$core.pragma('dart2js:noInline')
-  static TEMPERATUREData_VoltageData create() => TEMPERATUREData_VoltageData._();
-  TEMPERATUREData_VoltageData createEmptyInstance() => create();
-  static $pb.PbList<TEMPERATUREData_VoltageData> createRepeated() => $pb.PbList<TEMPERATUREData_VoltageData>();
-  @$core.pragma('dart2js:noInline')
-  static TEMPERATUREData_VoltageData getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TEMPERATUREData_VoltageData>(create);
-  static TEMPERATUREData_VoltageData? _defaultInstance;
-
-  @$pb.TagNumber(1)
-  $core.int get voltage10k => $_getIZ(0);
-  @$pb.TagNumber(1)
-  set voltage10k($core.int v) { $_setSignedInt32(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasVoltage10k() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearVoltage10k() => clearField(1);
-
-  @$pb.TagNumber(2)
-  $core.int get voltage1k => $_getIZ(1);
-  @$pb.TagNumber(2)
-  set voltage1k($core.int v) { $_setSignedInt32(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasVoltage1k() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearVoltage1k() => clearField(2);
-}
-
-class TEMPERATUREData extends $pb.GeneratedMessage {
-  static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'TEMPERATUREData', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Protos'), createEmptyInstance: create)
-    ..hasRequiredFields = false
-  ;
-
-  TEMPERATUREData._() : super();
-  factory TEMPERATUREData() => create();
-  factory TEMPERATUREData.fromBuffer($core.List<$core.int> i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromBuffer(i, r);
-  factory TEMPERATUREData.fromJson($core.String i, [$pb.ExtensionRegistry r = $pb.ExtensionRegistry.EMPTY]) => create()..mergeFromJson(i, r);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.deepCopy] instead. '
-  'Will be removed in next major version')
-  TEMPERATUREData clone() => TEMPERATUREData()..mergeFromMessage(this);
-  @$core.Deprecated(
-  'Using this can add significant overhead to your binary. '
-  'Use [GeneratedMessageGenericExtensions.rebuild] instead. '
-  'Will be removed in next major version')
-  TEMPERATUREData copyWith(void Function(TEMPERATUREData) updates) => super.copyWith((message) => updates(message as TEMPERATUREData)) as TEMPERATUREData; // ignore: deprecated_member_use
-  $pb.BuilderInfo get info_ => _i;
-  @$core.pragma('dart2js:noInline')
-  static TEMPERATUREData create() => TEMPERATUREData._();
-  TEMPERATUREData createEmptyInstance() => create();
-  static $pb.PbList<TEMPERATUREData> createRepeated() => $pb.PbList<TEMPERATUREData>();
-  @$core.pragma('dart2js:noInline')
-  static TEMPERATUREData getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<TEMPERATUREData>(create);
-  static TEMPERATUREData? _defaultInstance;
 }
 
 class PTData extends $pb.GeneratedMessage {

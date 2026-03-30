@@ -16,47 +16,33 @@ message IMUData {
 }
 
 message PPGData {
-  message LedData {
-    int32 led_1 = 1;
-    int32 led_2 = 2;
-    int32 led_3 = 3;
-  }
-  
-  message TemperatureData {
-    float temperature = 1;
-  }
-  
+  int32 sensor_id = 1;
+  int32 led_1 = 2;
+  int32 led_2 = 3;
+  int32 led_3 = 4;
+
+  float temperature = 5;
 }
 
 message AIRFLOWData{
 
-  // Voltages in millivolts
+  // voltages (mV)
   int32 voltage10k_l = 1;
   int32 voltage10k_r = 2;
   int32 voltage10k_e = 3;
 
-  // Raw ADC codes
+  // raw ADC codes
   uint32 raw_l = 4;
   uint32 raw_r = 5;
   uint32 raw_e = 6;
 
-  // Computed temperatures in °C
+  // computed temperatures
   float temp_l = 7;
   float temp_r = 8;
   float temp_e = 9;
 }
 
-
-message TEMPERATUREData{
-  message VoltageData{
-    int32 voltage10k = 1;
-    int32 voltage1k = 2;
-  }
-  
-}
-
-
-  message PTData {
+message PTData {
     float temperature = 1;  
     float pressure    = 2; 
   }

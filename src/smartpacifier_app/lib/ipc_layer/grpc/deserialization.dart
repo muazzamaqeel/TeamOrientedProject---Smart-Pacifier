@@ -63,17 +63,17 @@ class SensorDeserializer {
 
       /// OPTIONAL PPG SENSOR
       case "ppg":
-        final msg = protos.PPGData.fromBuffer(payload);
+      final msg = protos.PPGData.fromBuffer(payload);
 
-        values["led_1"] = msg.ledData.led1;
-        values["led_2"] = msg.ledData.led2;
-        values["led_3"] = msg.ledData.led3;
+      values["sensor_id"] = msg.sensorId;
 
-        if (msg.hasTemperatureData()) {
-          values["temperature"] = msg.temperatureData.temperature;
-        }
+      values["led_1"] = msg.led1;
+      values["led_2"] = msg.led2;
+      values["led_3"] = msg.led3;
 
-        break;
+      values["temperature"] = msg.temperature;
+
+      break;
 
       default:
         // Unknown sensor type

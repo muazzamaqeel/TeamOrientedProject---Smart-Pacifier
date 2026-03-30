@@ -67,7 +67,22 @@ class SensorDeserializer {
 
         break;
 
-      default:
+      /// ✅ FIX: ADD PPG SUPPORT
+      case "ppg":
+
+        final msg = protos.PPGData.fromBuffer(payload);
+
+        // 🔥 extract sensor_id from topic if present
+        final sensorId = parts.length > 3
+            ? parts[3]
+            : msg.sensorId.toString();
+
+        values["ID_${sensorId}_led_1"] = msg.led1;
+        values["ID_${sensorId}_led_2"] = msg.led2;
+        values["ID_${sensorId}_led_3"] = msg.led3;
+
+        values["ID_${sensorId}_temperature"] = msg.temperature;
+
         break;
     }
 
@@ -76,7 +91,7 @@ class SensorDeserializer {
       sensorType: sensorType,
       sensorGroup: group,
       values: values,
-      timestamp: DateTime.now(),   // ✅ timestamp added here
+      timestamp: DateTime.now(),   // keep this
     );
   }
 }

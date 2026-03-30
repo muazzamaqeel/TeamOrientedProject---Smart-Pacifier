@@ -420,6 +420,12 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
                               _buildLiveBadge('pat_pressure'),
                               _buildLiveBadge('pat_temperature'),
                               _buildLiveBadge('airflow_raw_e'),
+
+                              /// ✅ PPG sensors (all 4)
+                              _buildLiveBadge('ppg_led_1_ID_1'),
+                              _buildLiveBadge('ppg_led_1_ID_2'),
+                              _buildLiveBadge('ppg_led_1_ID_3'),
+                              _buildLiveBadge('ppg_led_1_ID_4'),
                             ],
                           ),
                         ),

@@ -34,29 +34,17 @@ final $typed_data.Uint8List iMUDataDescriptor = $convert.base64Decode('CgdJTVVEY
 @$core.Deprecated('Use pPGDataDescriptor instead')
 const PPGData$json = const {
   '1': 'PPGData',
-  '3': const [PPGData_LedData$json, PPGData_TemperatureData$json],
-};
-
-@$core.Deprecated('Use pPGDataDescriptor instead')
-const PPGData_LedData$json = const {
-  '1': 'LedData',
   '2': const [
-    const {'1': 'led_1', '3': 1, '4': 1, '5': 5, '10': 'led1'},
-    const {'1': 'led_2', '3': 2, '4': 1, '5': 5, '10': 'led2'},
-    const {'1': 'led_3', '3': 3, '4': 1, '5': 5, '10': 'led3'},
-  ],
-};
-
-@$core.Deprecated('Use pPGDataDescriptor instead')
-const PPGData_TemperatureData$json = const {
-  '1': 'TemperatureData',
-  '2': const [
-    const {'1': 'temperature', '3': 1, '4': 1, '5': 2, '10': 'temperature'},
+    const {'1': 'sensor_id', '3': 1, '4': 1, '5': 5, '10': 'sensorId'},
+    const {'1': 'led_1', '3': 2, '4': 1, '5': 5, '10': 'led1'},
+    const {'1': 'led_2', '3': 3, '4': 1, '5': 5, '10': 'led2'},
+    const {'1': 'led_3', '3': 4, '4': 1, '5': 5, '10': 'led3'},
+    const {'1': 'temperature', '3': 5, '4': 1, '5': 2, '10': 'temperature'},
   ],
 };
 
 /// Descriptor for `PPGData`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List pPGDataDescriptor = $convert.base64Decode('CgdQUEdEYXRhGkgKB0xlZERhdGESEwoFbGVkXzEYASABKAVSBGxlZDESEwoFbGVkXzIYAiABKAVSBGxlZDISEwoFbGVkXzMYAyABKAVSBGxlZDMaMwoPVGVtcGVyYXR1cmVEYXRhEiAKC3RlbXBlcmF0dXJlGAEgASgCUgt0ZW1wZXJhdHVyZQ==');
+final $typed_data.Uint8List pPGDataDescriptor = $convert.base64Decode('CgdQUEdEYXRhEhsKCXNlbnNvcl9pZBgBIAEoBVIIc2Vuc29ySWQSEwoFbGVkXzEYAiABKAVSBGxlZDESEwoFbGVkXzIYAyABKAVSBGxlZDISEwoFbGVkXzMYBCABKAVSBGxlZDMSIAoLdGVtcGVyYXR1cmUYBSABKAJSC3RlbXBlcmF0dXJl');
 @$core.Deprecated('Use aIRFLOWDataDescriptor instead')
 const AIRFLOWData$json = const {
   '1': 'AIRFLOWData',
@@ -75,23 +63,6 @@ const AIRFLOWData$json = const {
 
 /// Descriptor for `AIRFLOWData`. Decode as a `google.protobuf.DescriptorProto`.
 final $typed_data.Uint8List aIRFLOWDataDescriptor = $convert.base64Decode('CgtBSVJGTE9XRGF0YRIhCgx2b2x0YWdlMTBrX2wYASABKAVSC3ZvbHRhZ2UxMGtMEiEKDHZvbHRhZ2UxMGtfchgCIAEoBVILdm9sdGFnZTEwa1ISIQoMdm9sdGFnZTEwa19lGAMgASgFUgt2b2x0YWdlMTBrRRITCgVyYXdfbBgEIAEoDVIEcmF3TBITCgVyYXdfchgFIAEoDVIEcmF3UhITCgVyYXdfZRgGIAEoDVIEcmF3RRIVCgZ0ZW1wX2wYByABKAJSBXRlbXBMEhUKBnRlbXBfchgIIAEoAlIFdGVtcFISFQoGdGVtcF9lGAkgASgCUgV0ZW1wRQ==');
-@$core.Deprecated('Use tEMPERATUREDataDescriptor instead')
-const TEMPERATUREData$json = const {
-  '1': 'TEMPERATUREData',
-  '3': const [TEMPERATUREData_VoltageData$json],
-};
-
-@$core.Deprecated('Use tEMPERATUREDataDescriptor instead')
-const TEMPERATUREData_VoltageData$json = const {
-  '1': 'VoltageData',
-  '2': const [
-    const {'1': 'voltage10k', '3': 1, '4': 1, '5': 5, '10': 'voltage10k'},
-    const {'1': 'voltage1k', '3': 2, '4': 1, '5': 5, '10': 'voltage1k'},
-  ],
-};
-
-/// Descriptor for `TEMPERATUREData`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List tEMPERATUREDataDescriptor = $convert.base64Decode('Cg9URU1QRVJBVFVSRURhdGEaSwoLVm9sdGFnZURhdGESHgoKdm9sdGFnZTEwaxgBIAEoBVIKdm9sdGFnZTEwaxIcCgl2b2x0YWdlMWsYAiABKAVSCXZvbHRhZ2Uxaw==');
 @$core.Deprecated('Use pTDataDescriptor instead')
 const PTData$json = const {
   '1': 'PTData',
