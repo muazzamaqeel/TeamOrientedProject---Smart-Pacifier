@@ -268,12 +268,6 @@ class PPGData extends $pb.GeneratedMessage {
 
 class AIRFLOWData extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'AIRFLOWData', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Protos'), createEmptyInstance: create)
-    ..a<$core.int>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'voltage10kL', $pb.PbFieldType.O3)
-    ..a<$core.int>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'voltage10kR', $pb.PbFieldType.O3)
-    ..a<$core.int>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'voltage10kE', $pb.PbFieldType.O3)
-    ..a<$core.int>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'rawL', $pb.PbFieldType.OU3)
-    ..a<$core.int>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'rawR', $pb.PbFieldType.OU3)
-    ..a<$core.int>(6, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'rawE', $pb.PbFieldType.OU3)
     ..a<$core.double>(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'tempL', $pb.PbFieldType.OF)
     ..a<$core.double>(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'tempR', $pb.PbFieldType.OF)
     ..a<$core.double>(9, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'tempE', $pb.PbFieldType.OF)
@@ -282,35 +276,11 @@ class AIRFLOWData extends $pb.GeneratedMessage {
 
   AIRFLOWData._() : super();
   factory AIRFLOWData({
-    $core.int? voltage10kL,
-    $core.int? voltage10kR,
-    $core.int? voltage10kE,
-    $core.int? rawL,
-    $core.int? rawR,
-    $core.int? rawE,
     $core.double? tempL,
     $core.double? tempR,
     $core.double? tempE,
   }) {
     final _result = create();
-    if (voltage10kL != null) {
-      _result.voltage10kL = voltage10kL;
-    }
-    if (voltage10kR != null) {
-      _result.voltage10kR = voltage10kR;
-    }
-    if (voltage10kE != null) {
-      _result.voltage10kE = voltage10kE;
-    }
-    if (rawL != null) {
-      _result.rawL = rawL;
-    }
-    if (rawR != null) {
-      _result.rawR = rawR;
-    }
-    if (rawE != null) {
-      _result.rawE = rawE;
-    }
     if (tempL != null) {
       _result.tempL = tempL;
     }
@@ -343,84 +313,30 @@ class AIRFLOWData extends $pb.GeneratedMessage {
   static AIRFLOWData getDefault() => _defaultInstance ??= $pb.GeneratedMessage.$_defaultFor<AIRFLOWData>(create);
   static AIRFLOWData? _defaultInstance;
 
-  @$pb.TagNumber(1)
-  $core.int get voltage10kL => $_getIZ(0);
-  @$pb.TagNumber(1)
-  set voltage10kL($core.int v) { $_setSignedInt32(0, v); }
-  @$pb.TagNumber(1)
-  $core.bool hasVoltage10kL() => $_has(0);
-  @$pb.TagNumber(1)
-  void clearVoltage10kL() => clearField(1);
-
-  @$pb.TagNumber(2)
-  $core.int get voltage10kR => $_getIZ(1);
-  @$pb.TagNumber(2)
-  set voltage10kR($core.int v) { $_setSignedInt32(1, v); }
-  @$pb.TagNumber(2)
-  $core.bool hasVoltage10kR() => $_has(1);
-  @$pb.TagNumber(2)
-  void clearVoltage10kR() => clearField(2);
-
-  @$pb.TagNumber(3)
-  $core.int get voltage10kE => $_getIZ(2);
-  @$pb.TagNumber(3)
-  set voltage10kE($core.int v) { $_setSignedInt32(2, v); }
-  @$pb.TagNumber(3)
-  $core.bool hasVoltage10kE() => $_has(2);
-  @$pb.TagNumber(3)
-  void clearVoltage10kE() => clearField(3);
-
-  @$pb.TagNumber(4)
-  $core.int get rawL => $_getIZ(3);
-  @$pb.TagNumber(4)
-  set rawL($core.int v) { $_setUnsignedInt32(3, v); }
-  @$pb.TagNumber(4)
-  $core.bool hasRawL() => $_has(3);
-  @$pb.TagNumber(4)
-  void clearRawL() => clearField(4);
-
-  @$pb.TagNumber(5)
-  $core.int get rawR => $_getIZ(4);
-  @$pb.TagNumber(5)
-  set rawR($core.int v) { $_setUnsignedInt32(4, v); }
-  @$pb.TagNumber(5)
-  $core.bool hasRawR() => $_has(4);
-  @$pb.TagNumber(5)
-  void clearRawR() => clearField(5);
-
-  @$pb.TagNumber(6)
-  $core.int get rawE => $_getIZ(5);
-  @$pb.TagNumber(6)
-  set rawE($core.int v) { $_setUnsignedInt32(5, v); }
-  @$pb.TagNumber(6)
-  $core.bool hasRawE() => $_has(5);
-  @$pb.TagNumber(6)
-  void clearRawE() => clearField(6);
-
   @$pb.TagNumber(7)
-  $core.double get tempL => $_getN(6);
+  $core.double get tempL => $_getN(0);
   @$pb.TagNumber(7)
-  set tempL($core.double v) { $_setFloat(6, v); }
+  set tempL($core.double v) { $_setFloat(0, v); }
   @$pb.TagNumber(7)
-  $core.bool hasTempL() => $_has(6);
+  $core.bool hasTempL() => $_has(0);
   @$pb.TagNumber(7)
   void clearTempL() => clearField(7);
 
   @$pb.TagNumber(8)
-  $core.double get tempR => $_getN(7);
+  $core.double get tempR => $_getN(1);
   @$pb.TagNumber(8)
-  set tempR($core.double v) { $_setFloat(7, v); }
+  set tempR($core.double v) { $_setFloat(1, v); }
   @$pb.TagNumber(8)
-  $core.bool hasTempR() => $_has(7);
+  $core.bool hasTempR() => $_has(1);
   @$pb.TagNumber(8)
   void clearTempR() => clearField(8);
 
   @$pb.TagNumber(9)
-  $core.double get tempE => $_getN(8);
+  $core.double get tempE => $_getN(2);
   @$pb.TagNumber(9)
-  set tempE($core.double v) { $_setFloat(8, v); }
+  set tempE($core.double v) { $_setFloat(2, v); }
   @$pb.TagNumber(9)
-  $core.bool hasTempE() => $_has(8);
+  $core.bool hasTempE() => $_has(2);
   @$pb.TagNumber(9)
   void clearTempE() => clearField(9);
 }

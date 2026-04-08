@@ -115,6 +115,11 @@ class MQTTService {
 
       try {
         final packet = SensorDeserializer.parse(topic, payload);
+
+        /// ✅ ADD RAW DATA + TOPIC (no other changes)
+        packet.rawPayload = payload;
+        packet.topic = topic;
+
         _controller.add(packet);
       } catch (e) {
         debugPrint('Decode error: $e');

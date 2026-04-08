@@ -7,6 +7,12 @@ class SensorPacket {
   /// timestamp when packet was received by the app
   final DateTime timestamp;
 
+  /// ✅ NEW: raw MQTT payload (protobuf bytes)
+  List<int>? rawPayload;
+
+  /// ✅ NEW: original MQTT topic
+  String? topic;
+
   SensorPacket({
     required this.pacifierId,
     required this.sensorType,

@@ -49,12 +49,6 @@ final $typed_data.Uint8List pPGDataDescriptor = $convert.base64Decode('CgdQUEdEY
 const AIRFLOWData$json = const {
   '1': 'AIRFLOWData',
   '2': const [
-    const {'1': 'voltage10k_l', '3': 1, '4': 1, '5': 5, '10': 'voltage10kL'},
-    const {'1': 'voltage10k_r', '3': 2, '4': 1, '5': 5, '10': 'voltage10kR'},
-    const {'1': 'voltage10k_e', '3': 3, '4': 1, '5': 5, '10': 'voltage10kE'},
-    const {'1': 'raw_l', '3': 4, '4': 1, '5': 13, '10': 'rawL'},
-    const {'1': 'raw_r', '3': 5, '4': 1, '5': 13, '10': 'rawR'},
-    const {'1': 'raw_e', '3': 6, '4': 1, '5': 13, '10': 'rawE'},
     const {'1': 'temp_l', '3': 7, '4': 1, '5': 2, '10': 'tempL'},
     const {'1': 'temp_r', '3': 8, '4': 1, '5': 2, '10': 'tempR'},
     const {'1': 'temp_e', '3': 9, '4': 1, '5': 2, '10': 'tempE'},
@@ -62,7 +56,7 @@ const AIRFLOWData$json = const {
 };
 
 /// Descriptor for `AIRFLOWData`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List aIRFLOWDataDescriptor = $convert.base64Decode('CgtBSVJGTE9XRGF0YRIhCgx2b2x0YWdlMTBrX2wYASABKAVSC3ZvbHRhZ2UxMGtMEiEKDHZvbHRhZ2UxMGtfchgCIAEoBVILdm9sdGFnZTEwa1ISIQoMdm9sdGFnZTEwa19lGAMgASgFUgt2b2x0YWdlMTBrRRITCgVyYXdfbBgEIAEoDVIEcmF3TBITCgVyYXdfchgFIAEoDVIEcmF3UhITCgVyYXdfZRgGIAEoDVIEcmF3RRIVCgZ0ZW1wX2wYByABKAJSBXRlbXBMEhUKBnRlbXBfchgIIAEoAlIFdGVtcFISFQoGdGVtcF9lGAkgASgCUgV0ZW1wRQ==');
+final $typed_data.Uint8List aIRFLOWDataDescriptor = $convert.base64Decode('CgtBSVJGTE9XRGF0YRIVCgZ0ZW1wX2wYByABKAJSBXRlbXBMEhUKBnRlbXBfchgIIAEoAlIFdGVtcFISFQoGdGVtcF9lGAkgASgCUgV0ZW1wRQ==');
 @$core.Deprecated('Use pTDataDescriptor instead')
 const PTData$json = const {
   '1': 'PTData',

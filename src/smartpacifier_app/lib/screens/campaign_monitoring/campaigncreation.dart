@@ -26,7 +26,7 @@ class _CampaignCreationState extends State<CampaignCreation>
     with SingleTickerProviderStateMixin {
 
   final _campaignController = TextEditingController();
-
+  final Map<String, bool> _contactState = {};
   final _available = <String>{};
   final _selected = <String>{};
 
@@ -253,60 +253,92 @@ f.close()
   /// WRITE DATA
   /// ================================
 
-  void _onData(SensorPacket packet) {
+void _onData(SensorPacket packet) {
 
-    final t = (_nextX++).toDouble();
+  final t = (_nextX++).toDouble();
 
-    if (!_selected.contains(packet.pacifierId)) {
-      return;
-    }
-
-    _sendPacketToPython(packet);
-
-    final typeMap =
-        _buffers.putIfAbsent(packet.sensorType, () => {});
-
-    final groupName =
-        '${packet.sensorGroup}_${packet.pacifierId}';
-
-    final groupMap =
-        typeMap.putIfAbsent(groupName, () => {});
-
-    packet.values.forEach((key, value) {
-
-      final s = groupMap.putIfAbsent(key, () => []);
-
-      s.add(FlSpot(t, value.toDouble()));
-
-      if (s.length > 300) {
-        s.removeAt(0);
-      }
-
-    });
-
-    /// log line
-    final line =
-        '[${DateTime.now().toIso8601String()}] '
-        '[${packet.sensorGroup}] '
-        'pacifier=${packet.pacifierId}, '
-        'type=${packet.sensorType}, '
-        'values=${packet.values}';
-
-    _logs.add(line);
-
-    if (_logs.length > 500) {
-      _logs.removeAt(0);
-    }
-
-    /// auto scroll logs
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_logScroll.hasClients) {
-        _logScroll.jumpTo(
-          _logScroll.position.maxScrollExtent,
-        );
-      }
-    });
+  if (!_selected.contains(packet.pacifierId)) {
+    return;
   }
+
+  _sendPacketToPython(packet);
+
+  final typeMap =
+      _buffers.putIfAbsent(packet.sensorType, () => {});
+
+  final groupName =
+      '${packet.sensorGroup}_${packet.pacifierId}';
+
+  final groupMap =
+      typeMap.putIfAbsent(groupName, () => {});
+
+  /// 🔥 NEW: contact detection
+  bool hasContact = false;
+
+  packet.values.forEach((key, value) {
+
+    final v = value.toDouble();
+
+    if (key.contains("led") && v > 350) {
+      hasContact = true;
+    }
+
+    final s = groupMap.putIfAbsent(key, () => []);
+
+    s.add(FlSpot(t, v));
+
+    if (s.length > 300) {
+      s.removeAt(0);
+    }
+
+  });
+
+  /// NEW: state tracking
+  final deviceKey = '${packet.sensorGroup}_${packet.pacifierId}';
+  final prevState = _contactState[deviceKey] ?? false;
+
+  if (hasContact){
+    _contactState[deviceKey] = true;
+
+    _logs.add(
+      '[${DateTime.now().toIso8601String()}] '
+      '[${packet.sensorGroup}] '
+      'pacifier=${packet.pacifierId} → Human Detected',
+    );
+  }
+
+  if (prevState && !hasContact) {
+    _contactState[deviceKey] = false;
+
+    _logs.add(
+      '[${DateTime.now().toIso8601String()}] '
+      '[${packet.sensorGroup}] '
+      'pacifier=${packet.pacifierId} → Human not detected anymore',
+    );
+  }
+
+  /// original log (unchanged)
+  final line =
+      '[${DateTime.now().toIso8601String()}] '
+      '[${packet.sensorGroup}] '
+      'pacifier=${packet.pacifierId}, '
+      'type=${packet.sensorType}, '
+      'values=${packet.values}';
+
+  _logs.add(line);
+
+  if (_logs.length > 500) {
+    _logs.removeAt(0);
+  }
+
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (_logScroll.hasClients) {
+      _logScroll.jumpTo(
+        _logScroll.position.maxScrollExtent,
+      );
+    }
+  });
+}
 
   /// ================================
   /// WRITE METADATA

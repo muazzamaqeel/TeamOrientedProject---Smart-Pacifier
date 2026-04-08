@@ -3,6 +3,7 @@
 %  - loads newest .h5 recording
 %  - scans all groups recursively
 %  - plots all datasets that contain timestamps
+%  - removes NaN + zero-padding artifacts
 %  - displays metadata
 
 clear; clc; close all;
@@ -87,7 +88,7 @@ axis off
 
 process_group(h5file,"/",info)
 
-fprintf("\nAll sensors plotted dynamically.\n");
+fprintf("\nAll sensors processed.\n");
 
 %% ===========================================================
 % RECURSIVE GROUP PROCESSOR
@@ -95,12 +96,12 @@ fprintf("\nAll sensors plotted dynamically.\n");
 
 function process_group(h5file,group_path,group_info)
 
-    % Check datasets in this group
     dataset_names = {};
     
     if ~isempty(group_info.Datasets)
         dataset_names = {group_info.Datasets.Name};
     end
+
     if any(strcmp(dataset_names,"timestamp"))
 
         fprintf("\nProcessing sensor group: %s\n",group_path);
@@ -110,6 +111,12 @@ function process_group(h5file,group_path,group_info)
 
         t = h5read(h5file,timestamp_path);
         t = t(:);
+
+        if isempty(t)
+            fprintf("  -> Skipping: empty timestamp\n");
+            return
+        end
+
         t = t - t(1);
 
         dataset_names(strcmp(dataset_names,"timestamp")) = [];
@@ -118,15 +125,47 @@ function process_group(h5file,group_path,group_info)
         for d = 1:numel(dataset_names)
 
             name = dataset_names{d};
-
             data_path = fullfile_path(group_path,name);
 
             data = h5read(h5file,data_path);
             data = data(:);
 
+            %% Align lengths
+            len_t = numel(t);
+            len_d = numel(data);
+
+            if len_d < len_t
+                data(end+1:len_t) = NaN;
+            elseif len_d > len_t
+                data = data(1:len_t);
+            end
+
+            %% ---------------- CORE FIX ----------------
+            % Remove invalid + padding samples
+
+            valid = isfinite(t) & isfinite(data);
+
+            t_valid = t(valid);
+            d_valid = data(valid);
+
+            % REMOVE ZERO ARTIFACTS (critical for your case)
+            nonzero = d_valid > 0;
+
+            t_valid = t_valid(nonzero);
+            d_valid = d_valid(nonzero);
+            %% ------------------------------------------------
+
+            if isempty(d_valid)
+                fprintf("  -> Skipping %s (no real data)\n", name);
+                continue;
+            end
+
+            fprintf("  -> Plotting %s (%d samples)\n", name, numel(d_valid));
+
+            %% Figure 1: Real-time (sparse timeline)
             figure("Name",group_path + " : " + name,"Color","w");
 
-            plot(t,data,"LineWidth",1.5);
+            plot(t_valid, d_valid, ".", "LineWidth", 1.5);
             grid on
 
             title(strrep(name,"_","."),"Interpreter","none")
@@ -141,6 +180,18 @@ function process_group(h5file,group_path,group_info)
 
             fix_axes()
 
+            %% OPTIONAL: Continuous waveform (reindexed)
+            figure("Name",group_path + " : " + name + " (continuous)","Color","w");
+
+            plot(d_valid, "LineWidth", 1.2);
+            grid on
+
+            title(strrep(name,"_",".") + " (continuous)","Interpreter","none")
+            xlabel("Sample index")
+            ylabel("value")
+
+            fix_axes()
+
         end
     end
 
@@ -148,7 +199,6 @@ function process_group(h5file,group_path,group_info)
     for i = 1:length(group_info.Groups)
 
         sub_group = group_info.Groups(i);
-
         process_group(h5file,sub_group.Name,sub_group)
 
     end

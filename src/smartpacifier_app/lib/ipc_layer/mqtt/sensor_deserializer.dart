@@ -44,14 +44,6 @@ class SensorDeserializer {
 
         final msg = protos.AIRFLOWData.fromBuffer(payload);
 
-        values["voltage_l"] = msg.voltage10kL;
-        values["voltage_r"] = msg.voltage10kR;
-        values["voltage_e"] = msg.voltage10kE;
-
-        values["raw_l"] = msg.rawL;
-        values["raw_r"] = msg.rawR;
-        values["raw_e"] = msg.rawE;
-
         values["temp_l"] = msg.tempL;
         values["temp_r"] = msg.tempR;
         values["temp_e"] = msg.tempE;
