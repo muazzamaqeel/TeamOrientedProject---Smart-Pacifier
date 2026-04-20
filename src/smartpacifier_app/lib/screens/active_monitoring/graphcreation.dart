@@ -11,7 +11,7 @@ class GraphCreation {
     List<Color> palette,
   ) {
 
-    final children = <Widget>[]; // ❌ removed wrong windowSize here
+    final children = <Widget>[];
 
     buffers.forEach((sensorType, groups) {
 
@@ -69,7 +69,7 @@ class GraphCreation {
     List<Color> palette,
   ) {
 
-    const double windowSize = 150; // ✅ correct position
+    const double windowSize = 150;
 
     final rawYs = seriesMap.values.expand((s) => s.map((pt) => pt.y)).toList();
 
@@ -113,7 +113,7 @@ class GraphCreation {
 
       final processed = orig
           .where((pt) => pt.x >= minX)
-          .map((pt) => FlSpot(pt.x - minX, pt.y.clamp(minClip, maxClip)))
+          .map((pt) => FlSpot(pt.x, pt.y.clamp(minClip, maxClip)))
           .toList(growable: false);
 
       final baseColor = palette[i % palette.length];
@@ -238,7 +238,41 @@ class GraphCreation {
                   lineBarsData: bars,
                   showingTooltipIndicators: tooltipIndicators,
                   gridData: FlGridData(show: true),
-                  titlesData: FlTitlesData(show: false),
+                  titlesData: FlTitlesData(
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        interval: 30,
+                        getTitlesWidget: (value, meta) {
+
+                          final now = DateTime.now();
+
+                          final secondsAgo = (maxX - value).toInt(); // ✅ FIX
+
+                          final t = now.subtract(Duration(seconds: secondsAgo));
+
+                          final label =
+                              "${t.hour.toString().padLeft(2, '0')}:"
+                              "${t.minute.toString().padLeft(2, '0')}:"
+                              "${t.second.toString().padLeft(2, '0')}";
+
+                          return Text(
+                            label,
+                            style: const TextStyle(fontSize: 10),
+                          );
+                        },
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    rightTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                    topTitles: AxisTitles(
+                      sideTitles: SideTitles(showTitles: false),
+                    ),
+                  ),
                   borderData: FlBorderData(show: false),
                 ),
                 duration: const Duration(milliseconds: 250),
