@@ -6,14 +6,12 @@ import 'package:fl_chart/fl_chart.dart';
 
 class GraphCreation {
 
-  /// [buffers]: sensorType → groupName → seriesName → spots
-  /// [palette]: list of colors to cycle through
   static Widget buildGraphs(
-      Map<String, Map<String, Map<String, List<FlSpot>>>> buffers,
-      List<Color> palette,
-      ) {
+    Map<String, Map<String, Map<String, List<FlSpot>>>> buffers,
+    List<Color> palette,
+  ) {
 
-    final children = <Widget>[];
+    final children = <Widget>[]; // ❌ removed wrong windowSize here
 
     buffers.forEach((sensorType, groups) {
 
@@ -22,8 +20,8 @@ class GraphCreation {
         child: Text(
           sensorType.toUpperCase(),
           style: const TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold
+            fontSize: 24,
+            fontWeight: FontWeight.bold
           ),
         ),
       ));
@@ -36,7 +34,6 @@ class GraphCreation {
       final measurementMap = <String, Map<String, List<FlSpot>>>{};
 
       combined.forEach((seriesName, spots) {
-
         final measurement = seriesName.split(RegExp(r'[_\[]')).first;
 
         measurementMap
@@ -67,10 +64,12 @@ class GraphCreation {
   }
 
   static Widget _buildChartCard(
-      String title,
-      Map<String, List<FlSpot>> seriesMap,
-      List<Color> palette,
-      ) {
+    String title,
+    Map<String, List<FlSpot>> seriesMap,
+    List<Color> palette,
+  ) {
+
+    const double windowSize = 150; // ✅ correct position
 
     final rawYs = seriesMap.values.expand((s) => s.map((pt) => pt.y)).toList();
 
@@ -102,6 +101,7 @@ class GraphCreation {
 
     final allXs = seriesMap.values.expand((s) => s.map((pt) => pt.x));
     final maxX = allXs.isEmpty ? 0.0 : allXs.reduce(max);
+    final minX = maxX - windowSize;
 
     final seriesNames = seriesMap.keys.toList()..sort();
 
@@ -112,7 +112,8 @@ class GraphCreation {
       final orig = seriesMap[seriesNames[i]]!;
 
       final processed = orig
-          .map((pt) => FlSpot(maxX - pt.x, pt.y.clamp(minClip, maxClip)))
+          .where((pt) => pt.x >= minX)
+          .map((pt) => FlSpot(pt.x - minX, pt.y.clamp(minClip, maxClip)))
           .toList(growable: false);
 
       final baseColor = palette[i % palette.length];
@@ -132,7 +133,7 @@ class GraphCreation {
         dotData: FlDotData(
           show: true,
           checkToShowDot: (spot, barData) =>
-          spot == barData.spots.last,
+              spot == barData.spots.last,
           getDotPainter: (spot, percent, bar, index) {
             return FlDotCirclePainter(
               radius: 4,
@@ -160,7 +161,6 @@ class GraphCreation {
     final tooltipIndicators = <ShowingTooltipIndicators>[];
 
     for (var i = 0; i < bars.length; i++) {
-
       final spots = bars[i].spots;
 
       if (spots.isNotEmpty) {
@@ -233,78 +233,13 @@ class GraphCreation {
               height: 180,
               child: LineChart(
                 LineChartData(
-
                   minY: axisMinY,
                   maxY: axisMaxY,
-
                   lineBarsData: bars,
-
                   showingTooltipIndicators: tooltipIndicators,
-
-                  gridData: FlGridData(
-                    show: true,
-                    drawVerticalLine: true,
-                    drawHorizontalLine: true,
-                    getDrawingVerticalLine: (_) => FlLine(
-                      color: Colors.grey.withOpacity(0.15),
-                      strokeWidth: 1,
-                      dashArray: [4, 4],
-                    ),
-                    getDrawingHorizontalLine: (_) => FlLine(
-                      color: Colors.grey.withOpacity(0.15),
-                      strokeWidth: 1,
-                      dashArray: [4, 4],
-                    ),
-                  ),
-
+                  gridData: FlGridData(show: true),
                   titlesData: FlTitlesData(show: false),
-
                   borderData: FlBorderData(show: false),
-
-                  lineTouchData: LineTouchData(
-                    enabled: true,
-                    handleBuiltInTouches: true,
-                    touchTooltipData: LineTouchTooltipData(
-
-                      getTooltipColor: (_) => Colors.black87,
-
-                      tooltipBorderRadius:
-                      BorderRadius.circular(8),
-
-                      tooltipPadding:
-                      const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6),
-
-                      fitInsideHorizontally: true,
-                      fitInsideVertically: true,
-
-                      getTooltipItems: (spots) {
-
-                        return spots.map((spot) {
-
-                          final name =
-                          seriesNames[spot.barIndex];
-
-                          final y =
-                          spot.y.toStringAsFixed(3);
-
-                          return LineTooltipItem(
-                            '$name: $y',
-                            TextStyle(
-                              color: spot.bar.gradient
-                                  ?.colors
-                                  .first ??
-                                  Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          );
-
-                        }).toList();
-                      },
-                    ),
-                  ),
                 ),
                 duration: const Duration(milliseconds: 250),
                 curve: Curves.easeOutCubic,
