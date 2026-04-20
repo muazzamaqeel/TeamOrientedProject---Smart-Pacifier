@@ -245,9 +245,11 @@ class GraphCreation {
                         interval: 30,
                         getTitlesWidget: (value, meta) {
 
-                          final now = DateTime.now();
+                          final now = DateTime.fromMillisecondsSinceEpoch(
+                            (maxX * 1000).toInt(),
+                          );
 
-                          final secondsAgo = (maxX - value).toInt(); // ✅ FIX
+                          final secondsAgo = (maxX - value).toInt();
 
                           final t = now.subtract(Duration(seconds: secondsAgo));
 
