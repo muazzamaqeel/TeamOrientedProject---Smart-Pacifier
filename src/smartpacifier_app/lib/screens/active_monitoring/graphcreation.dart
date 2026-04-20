@@ -245,18 +245,14 @@ class GraphCreation {
                         interval: 30,
                         getTitlesWidget: (value, meta) {
 
-                          final now = DateTime.fromMillisecondsSinceEpoch(
-                            (maxX * 1000).toInt(),
-                          );
+                        final seconds = value.toInt();
 
-                          final secondsAgo = (maxX - value).toInt();
+                        final duration = Duration(seconds: seconds);
 
-                          final t = now.subtract(Duration(seconds: secondsAgo));
-
-                          final label =
-                              "${t.hour.toString().padLeft(2, '0')}:"
-                              "${t.minute.toString().padLeft(2, '0')}:"
-                              "${t.second.toString().padLeft(2, '0')}";
+                        final label =
+                            "${duration.inHours.toString().padLeft(2, '0')}:"
+                            "${(duration.inMinutes % 60).toString().padLeft(2, '0')}:"
+                            "${(duration.inSeconds % 60).toString().padLeft(2, '0')}";
 
                           return Text(
                             label,
