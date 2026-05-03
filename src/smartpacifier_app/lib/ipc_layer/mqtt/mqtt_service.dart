@@ -15,7 +15,9 @@ enum MqttConnectionStatus {
 }
 
 class MQTTService {
-  late MqttServerClient client;
+  MqttServerClient? client;
+
+  StreamSubscription? _mqttSub;
 
   final StreamController<SensorPacket> _controller =
       StreamController<SensorPacket>.broadcast();
@@ -29,7 +31,6 @@ class MQTTService {
   Stream<SensorPacket> get stream => _controller.stream;
 
   bool _isConnecting = false;
-  bool _initialized = false;
 
   Future<void> connect() async {
     if (_isConnecting) return;
@@ -40,58 +41,90 @@ class MQTTService {
       statusMessage.value =
           'Connecting to ${ConfigExtractor.host}:${ConfigExtractor.port}...';
 
-      client = MqttServerClient(ConfigExtractor.host, 'flutter_client');
-      client.port = ConfigExtractor.port;
-      client.keepAlivePeriod = 20;
-      client.logging(on: false);
-      client.autoReconnect = true;
-      client.resubscribeOnAutoReconnect = true;
+      await _cleanupOldClient();
 
-      client.onConnected = _onConnected;
-      client.onDisconnected = _onDisconnected;
-      client.onSubscribed = (topic) {
+      final newClient = MqttServerClient(
+        ConfigExtractor.host,
+        'flutter_client_${DateTime.now().millisecondsSinceEpoch}',
+      );
+
+      newClient.port = ConfigExtractor.port;
+      newClient.keepAlivePeriod = 20;
+      newClient.logging(on: false);
+      newClient.autoReconnect = true;
+      newClient.resubscribeOnAutoReconnect = true;
+
+      newClient.onConnected = _onConnected;
+      newClient.onDisconnected = _onDisconnected;
+
+      newClient.onSubscribed = (topic) {
         statusMessage.value = 'Subscribed to $topic';
       };
-      client.onAutoReconnect = () {
+
+      newClient.onAutoReconnect = () {
         connectionStatus.value = MqttConnectionStatus.connecting;
         statusMessage.value = 'Reconnecting...';
       };
-      client.onAutoReconnected = () {
+
+      newClient.onAutoReconnected = () {
         connectionStatus.value = MqttConnectionStatus.connected;
-        statusMessage.value = 'Reconnected';
+        statusMessage.value = 'Reconnected to Pacifier/#';
+
+        try {
+          newClient.subscribe('Pacifier/#', MqttQos.atLeastOnce);
+        } catch (_) {}
       };
 
       final connMess = MqttConnectMessage()
-          .withClientIdentifier('flutter_client')
+          .withClientIdentifier(
+            'flutter_client_${DateTime.now().millisecondsSinceEpoch}',
+          )
           .startClean();
 
-      client.connectionMessage = connMess;
+      newClient.connectionMessage = connMess;
 
-      await client.connect();
+      client = newClient;
 
-      if (client.connectionStatus?.state != MqttConnectionState.connected) {
+      await newClient.connect();
+
+      if (newClient.connectionStatus?.state != MqttConnectionState.connected) {
         connectionStatus.value = MqttConnectionStatus.error;
         statusMessage.value =
-            'MQTT connection failed: ${client.connectionStatus?.state}';
+            'MQTT connection failed: ${newClient.connectionStatus?.state}';
         return;
       }
 
-      if (!_initialized) {
-        _listenToMessages();
-        _initialized = true;
-      }
+      _listenToMessages(newClient);
 
-      client.subscribe('Pacifier/#', MqttQos.atLeastOnce);
+      newClient.subscribe('Pacifier/#', MqttQos.atLeastOnce);
     } catch (e) {
       connectionStatus.value = MqttConnectionStatus.error;
       statusMessage.value = 'MQTT connection error: $e';
 
       try {
-        client.disconnect();
+        client?.disconnect();
       } catch (_) {}
     } finally {
       _isConnecting = false;
     }
+  }
+
+  Future<void> reconnect() async {
+    await connect();
+  }
+
+  Future<void> _cleanupOldClient() async {
+    try {
+      await _mqttSub?.cancel();
+    } catch (_) {}
+
+    _mqttSub = null;
+
+    try {
+      client?.disconnect();
+    } catch (_) {}
+
+    client = null;
   }
 
   void _onConnected() {
@@ -105,8 +138,8 @@ class MQTTService {
     statusMessage.value = 'Disconnected from broker';
   }
 
-  void _listenToMessages() {
-    client.updates?.listen((events) {
+  void _listenToMessages(MqttServerClient activeClient) {
+    _mqttSub = activeClient.updates?.listen((events) {
       if (events.isEmpty) return;
 
       final rec = events.first.payload as MqttPublishMessage;
@@ -116,24 +149,26 @@ class MQTTService {
       try {
         final packet = SensorDeserializer.parse(topic, payload);
 
-        /// ✅ ADD RAW DATA + TOPIC (no other changes)
+        if (packet == null) {
+          return;
+        }
+
         packet.rawPayload = payload;
         packet.topic = topic;
 
         _controller.add(packet);
       } catch (e) {
-        debugPrint('Decode error: $e');
+        debugPrint('Decode error on topic $topic: $e');
       }
     });
   }
 
   void disconnect() {
-    try {
-      client.disconnect();
-    } catch (_) {}
+    _cleanupOldClient();
   }
 
   void dispose() {
+    _cleanupOldClient();
     _controller.close();
     connectionStatus.dispose();
     statusMessage.dispose();

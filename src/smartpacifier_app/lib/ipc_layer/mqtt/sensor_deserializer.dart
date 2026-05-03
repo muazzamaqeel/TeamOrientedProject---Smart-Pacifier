@@ -4,24 +4,45 @@ import '../../generated/sensor_data.pb.dart' as protos;
 import 'sensor_packet.dart';
 
 class SensorDeserializer {
-  static SensorPacket parse(
+  static SensorPacket? parse(
     String topic,
     List<int> payload,
   ) {
     final parts = topic.split('/');
 
-    final rawPacifier = parts.length > 1 ? parts[1] : "0";
+    // Expected:
+    // Pacifier/0_1/imu
+    // Pacifier/0_1/airflow
+    // Pacifier/0_1/pat
+    // Pacifier/0_1/ppg
+    if (parts.length < 3) {
+      return null;
+    }
+
+    final group = parts[0];
+    final rawPacifier = parts[1];
+    final sensorType = parts[2];
+
+    const allowedSensorTypes = {
+      'imu',
+      'airflow',
+      'pat',
+      'ppg',
+    };
+
+    if (!allowedSensorTypes.contains(sensorType)) {
+      return null;
+    }
 
     final pacifierId = rawPacifier.contains('_')
         ? rawPacifier.split('_').last
         : rawPacifier;
 
-    final sensorType = parts.length > 2 ? parts[2] : "unknown";
-
-    final group = parts.isNotEmpty ? parts[0] : "backend";
+    if (int.tryParse(pacifierId) == null) {
+      return null;
+    }
 
     final values = <String, num>{};
-
     int? espTimestampMs;
 
     switch (sensorType) {
@@ -73,9 +94,6 @@ class SensorDeserializer {
         values["ID_${msg.sensorId}_led_3"] = msg.led3;
         values["ID_${msg.sensorId}_temperature_c"] = msg.temperature;
 
-        break;
-
-      default:
         break;
     }
 

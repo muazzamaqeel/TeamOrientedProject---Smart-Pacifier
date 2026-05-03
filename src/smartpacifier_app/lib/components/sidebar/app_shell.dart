@@ -125,7 +125,7 @@ class _AppShellState extends State<AppShell> {
                             const SizedBox(width: 8),
                             Expanded(child: Text(text)),
                             TextButton(
-                              onPressed: mqttService.connect,
+                              onPressed: mqttService.reconnect,
                               child: const Text('Reconnect'),
                             ),
                           ],

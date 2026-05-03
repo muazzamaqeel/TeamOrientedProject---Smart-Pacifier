@@ -325,9 +325,10 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
     pacifierIds.removeWhere((id) => id.isEmpty);
 
-    final pacifierList = pacifierIds.toList()
-      ..sort((a, b) =>
-          int.tryParse(a)!.compareTo(int.tryParse(b)!));
+    final pacifierList = pacifierIds
+        .where((id) => int.tryParse(id) != null)
+        .toList()
+      ..sort((a, b) => int.parse(a).compareTo(int.parse(b)));
 
     return Scaffold(
       appBar: AppBar(
