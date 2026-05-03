@@ -301,40 +301,37 @@ void _onData(SensorPacket packet) {
   if (hasContact) {
     _contactState[deviceKey] = true;
 
-    _logs.add(
-      '[APP=${DateTime.now().toIso8601String()}] '
-      '[ESP=${packet.espTimeLabel}] '
-      '[${packet.sensorGroup}] '
-      'topic=${packet.topic ?? "-"}, '
-      'pacifier=${packet.pacifierId}, '
-      'type=${packet.sensorType}, '
-      'event=Human Detected',
-    );
+      _logs.add(
+        '[ESP=${packet.espTimeLabel}] '
+        '[${packet.sensorGroup}] '
+        'topic=${packet.topic ?? "-"}, '
+        'pacifier=${packet.pacifierId}, '
+        'type=${packet.sensorType}, '
+        'event=Human Detected',
+      );
   }
 
   if (prevState && !hasContact) {
     _contactState[deviceKey] = false;
 
-    _logs.add(
-      '[APP=${DateTime.now().toIso8601String()}] '
-      '[ESP=${packet.espTimeLabel}] '
-      '[${packet.sensorGroup}] '
-      'topic=${packet.topic ?? "-"}, '
-      'pacifier=${packet.pacifierId}, '
-      'type=${packet.sensorType}, '
-      'event=Human not detected anymore',
-    );
+      _logs.add(
+        '[ESP=${packet.espTimeLabel}] '
+        '[${packet.sensorGroup}] '
+        'topic=${packet.topic ?? "-"}, '
+        'pacifier=${packet.pacifierId}, '
+        'type=${packet.sensorType}, '
+        'event=Human not detected anymore',
+      );
   }
 
   /// original log (unchanged)
-  final line =
-      '[APP=${DateTime.now().toIso8601String()}] '
-      '[ESP=${packet.espTimeLabel}] '
-      '[${packet.sensorGroup}] '
-      'topic=${packet.topic ?? "-"}, '
-      'pacifier=${packet.pacifierId}, '
-      'type=${packet.sensorType}, '
-      'values=${packet.values}';
+      final line =
+          '[ESP=${packet.espTimeLabel}] '
+          '[${packet.sensorGroup}] '
+          'topic=${packet.topic ?? "-"}, '
+          'pacifier=${packet.pacifierId}, '
+          'type=${packet.sensorType}, '
+          'values=${packet.values}';
   _logs.add(line);
 
   if (_logs.length > 500) {
@@ -554,11 +551,10 @@ void _onData(SensorPacket packet) {
   Widget _buildLogCard(String line) {
 
     final espMatch = RegExp(r'\[ESP=(.*?)\]').firstMatch(line);
-    final appMatch = RegExp(r'\[APP=(.*?)\]').firstMatch(line);
 
     final ts = espMatch != null
         ? 'ESP ${espMatch.group(1)}'
-        : appMatch?.group(1) ?? '';
+        : '';
 
     final pacMatch = RegExp(r'pacifier=(\d+)').firstMatch(line);
     final pacifier = pacMatch?.group(1) ?? '?';

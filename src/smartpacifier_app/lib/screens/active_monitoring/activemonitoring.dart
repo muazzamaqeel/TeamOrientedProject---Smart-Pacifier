@@ -96,7 +96,6 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
         _needsRebuild = true;
 
         final line =
-            '[APP=${DateTime.now().toIso8601String()}] '
             '[ESP=${packet.espTimeLabel}] '
             '[${packet.sensorGroup}] '
             'topic=${packet.topic ?? "-"}, '
@@ -119,7 +118,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
         });
       },
       onError: (e) {
-        _logs.add('[${DateTime.now().toIso8601String()}] Error: $e');
+        _logs.add('[ERROR] $e');
         if (_logs.length > 200) _logs.removeAt(0);
         _stopMonitoring('Backend error – monitoring stopped');
       },
@@ -221,11 +220,10 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
   Widget _buildLogCard(String line) {
 
     final espMatch = RegExp(r'\[ESP=(.*?)\]').firstMatch(line);
-    final appMatch = RegExp(r'\[APP=(.*?)\]').firstMatch(line);
 
     final ts = espMatch != null
         ? 'ESP ${espMatch.group(1)}'
-        : appMatch?.group(1) ?? '';
+        : '';
 
     final pacMatch = RegExp(r'pacifier=(\d+)').firstMatch(line);
     final pacifier = pacMatch?.group(1) ?? '?';
