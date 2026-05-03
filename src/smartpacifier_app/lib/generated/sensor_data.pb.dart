@@ -7,6 +7,7 @@
 
 import 'dart:core' as $core;
 
+import 'package:fixnum/fixnum.dart' as $fixnum;
 import 'package:protobuf/protobuf.dart' as $pb;
 
 class IMUData_MotionVector extends $pb.GeneratedMessage {
@@ -89,6 +90,7 @@ class IMUData extends $pb.GeneratedMessage {
     ..a<$core.double>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'temperature', $pb.PbFieldType.OF)
     ..aOM<IMUData_MotionVector>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'acc', subBuilder: IMUData_MotionVector.create)
     ..aOM<IMUData_MotionVector>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'gyro', subBuilder: IMUData_MotionVector.create)
+    ..a<$fixnum.Int64>(100, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'timestampMs', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..hasRequiredFields = false
   ;
 
@@ -97,6 +99,7 @@ class IMUData extends $pb.GeneratedMessage {
     $core.double? temperature,
     IMUData_MotionVector? acc,
     IMUData_MotionVector? gyro,
+    $fixnum.Int64? timestampMs,
   }) {
     final _result = create();
     if (temperature != null) {
@@ -107,6 +110,9 @@ class IMUData extends $pb.GeneratedMessage {
     }
     if (gyro != null) {
       _result.gyro = gyro;
+    }
+    if (timestampMs != null) {
+      _result.timestampMs = timestampMs;
     }
     return _result;
   }
@@ -161,6 +167,15 @@ class IMUData extends $pb.GeneratedMessage {
   void clearGyro() => clearField(3);
   @$pb.TagNumber(3)
   IMUData_MotionVector ensureGyro() => $_ensure(2);
+
+  @$pb.TagNumber(100)
+  $fixnum.Int64 get timestampMs => $_getI64(3);
+  @$pb.TagNumber(100)
+  set timestampMs($fixnum.Int64 v) { $_setInt64(3, v); }
+  @$pb.TagNumber(100)
+  $core.bool hasTimestampMs() => $_has(3);
+  @$pb.TagNumber(100)
+  void clearTimestampMs() => clearField(100);
 }
 
 class PPGData extends $pb.GeneratedMessage {
@@ -170,6 +185,7 @@ class PPGData extends $pb.GeneratedMessage {
     ..a<$core.int>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'led2', $pb.PbFieldType.O3, protoName: 'led_2')
     ..a<$core.int>(4, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'led3', $pb.PbFieldType.O3, protoName: 'led_3')
     ..a<$core.double>(5, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'temperature', $pb.PbFieldType.OF)
+    ..a<$fixnum.Int64>(100, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'timestampMs', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..hasRequiredFields = false
   ;
 
@@ -180,6 +196,7 @@ class PPGData extends $pb.GeneratedMessage {
     $core.int? led2,
     $core.int? led3,
     $core.double? temperature,
+    $fixnum.Int64? timestampMs,
   }) {
     final _result = create();
     if (sensorId != null) {
@@ -196,6 +213,9 @@ class PPGData extends $pb.GeneratedMessage {
     }
     if (temperature != null) {
       _result.temperature = temperature;
+    }
+    if (timestampMs != null) {
+      _result.timestampMs = timestampMs;
     }
     return _result;
   }
@@ -264,6 +284,15 @@ class PPGData extends $pb.GeneratedMessage {
   $core.bool hasTemperature() => $_has(4);
   @$pb.TagNumber(5)
   void clearTemperature() => clearField(5);
+
+  @$pb.TagNumber(100)
+  $fixnum.Int64 get timestampMs => $_getI64(5);
+  @$pb.TagNumber(100)
+  set timestampMs($fixnum.Int64 v) { $_setInt64(5, v); }
+  @$pb.TagNumber(100)
+  $core.bool hasTimestampMs() => $_has(5);
+  @$pb.TagNumber(100)
+  void clearTimestampMs() => clearField(100);
 }
 
 class AIRFLOWData extends $pb.GeneratedMessage {
@@ -271,6 +300,7 @@ class AIRFLOWData extends $pb.GeneratedMessage {
     ..a<$core.double>(7, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'tempL', $pb.PbFieldType.OF)
     ..a<$core.double>(8, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'tempR', $pb.PbFieldType.OF)
     ..a<$core.double>(9, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'tempE', $pb.PbFieldType.OF)
+    ..a<$fixnum.Int64>(100, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'timestampMs', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..hasRequiredFields = false
   ;
 
@@ -279,6 +309,7 @@ class AIRFLOWData extends $pb.GeneratedMessage {
     $core.double? tempL,
     $core.double? tempR,
     $core.double? tempE,
+    $fixnum.Int64? timestampMs,
   }) {
     final _result = create();
     if (tempL != null) {
@@ -289,6 +320,9 @@ class AIRFLOWData extends $pb.GeneratedMessage {
     }
     if (tempE != null) {
       _result.tempE = tempE;
+    }
+    if (timestampMs != null) {
+      _result.timestampMs = timestampMs;
     }
     return _result;
   }
@@ -339,12 +373,22 @@ class AIRFLOWData extends $pb.GeneratedMessage {
   $core.bool hasTempE() => $_has(2);
   @$pb.TagNumber(9)
   void clearTempE() => clearField(9);
+
+  @$pb.TagNumber(100)
+  $fixnum.Int64 get timestampMs => $_getI64(3);
+  @$pb.TagNumber(100)
+  set timestampMs($fixnum.Int64 v) { $_setInt64(3, v); }
+  @$pb.TagNumber(100)
+  $core.bool hasTimestampMs() => $_has(3);
+  @$pb.TagNumber(100)
+  void clearTimestampMs() => clearField(100);
 }
 
 class PTData extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PTData', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Protos'), createEmptyInstance: create)
     ..a<$core.double>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'temperature', $pb.PbFieldType.OF)
     ..a<$core.double>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'pressure', $pb.PbFieldType.OF)
+    ..a<$fixnum.Int64>(100, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'timestampMs', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..hasRequiredFields = false
   ;
 
@@ -352,6 +396,7 @@ class PTData extends $pb.GeneratedMessage {
   factory PTData({
     $core.double? temperature,
     $core.double? pressure,
+    $fixnum.Int64? timestampMs,
   }) {
     final _result = create();
     if (temperature != null) {
@@ -359,6 +404,9 @@ class PTData extends $pb.GeneratedMessage {
     }
     if (pressure != null) {
       _result.pressure = pressure;
+    }
+    if (timestampMs != null) {
+      _result.timestampMs = timestampMs;
     }
     return _result;
   }
@@ -400,5 +448,14 @@ class PTData extends $pb.GeneratedMessage {
   $core.bool hasPressure() => $_has(1);
   @$pb.TagNumber(2)
   void clearPressure() => clearField(2);
+
+  @$pb.TagNumber(100)
+  $fixnum.Int64 get timestampMs => $_getI64(2);
+  @$pb.TagNumber(100)
+  set timestampMs($fixnum.Int64 v) { $_setInt64(2, v); }
+  @$pb.TagNumber(100)
+  $core.bool hasTimestampMs() => $_has(2);
+  @$pb.TagNumber(100)
+  void clearTimestampMs() => clearField(100);
 }
 

@@ -1,13 +1,13 @@
+// File: lib/ipc_layer/mqtt/sensor_deserializer.dart
+
 import '../../generated/sensor_data.pb.dart' as protos;
 import 'sensor_packet.dart';
 
 class SensorDeserializer {
-
   static SensorPacket parse(
     String topic,
     List<int> payload,
   ) {
-
     final parts = topic.split('/');
 
     final rawPacifier = parts.length > 1 ? parts[1] : "0";
@@ -22,59 +22,60 @@ class SensorDeserializer {
 
     final values = <String, num>{};
 
+    int? espTimestampMs;
+
     switch (sensorType) {
-
       case "imu":
-
         final msg = protos.IMUData.fromBuffer(payload);
 
-        values["temperature"] = msg.temperature;
+        espTimestampMs = msg.timestampMs.toInt();
 
-        values["acc_x"] = msg.acc.x;
-        values["acc_y"] = msg.acc.y;
-        values["acc_z"] = msg.acc.z;
+        values["temperature_c"] = msg.temperature;
 
-        values["gyro_x"] = msg.gyro.x;
-        values["gyro_y"] = msg.gyro.y;
-        values["gyro_z"] = msg.gyro.z;
+        values["acc_x_g"] = msg.acc.x;
+        values["acc_y_g"] = msg.acc.y;
+        values["acc_z_g"] = msg.acc.z;
+
+        values["gyro_x_dps"] = msg.gyro.x;
+        values["gyro_y_dps"] = msg.gyro.y;
+        values["gyro_z_dps"] = msg.gyro.z;
 
         break;
 
       case "airflow":
-
         final msg = protos.AIRFLOWData.fromBuffer(payload);
 
-        values["temp_l"] = msg.tempL;
-        values["temp_r"] = msg.tempR;
-        values["temp_e"] = msg.tempE;
+        espTimestampMs = msg.timestampMs.toInt();
+
+        values["in0_c"] = msg.tempL;
+        values["in1_c"] = msg.tempR;
+        values["in2_c"] = msg.tempE;
 
         break;
 
       case "pat":
-
         final msg = protos.PTData.fromBuffer(payload);
 
-        values["temperature"] = msg.temperature;
-        values["pressure"] = msg.pressure;
+        espTimestampMs = msg.timestampMs.toInt();
+
+        values["temperature_c"] = msg.temperature;
+        values["pressure_hpa"] = msg.pressure;
 
         break;
 
-      /// ✅ FIX: ADD PPG SUPPORT
       case "ppg":
-
         final msg = protos.PPGData.fromBuffer(payload);
 
-        // 🔥 extract sensor_id from topic if present
-        final sensorId = parts.length > 3
-            ? parts[3]
-            : msg.sensorId.toString();
+        espTimestampMs = msg.timestampMs.toInt();
 
-        values["ID_${sensorId}_led_1"] = msg.led1;
-        values["ID_${sensorId}_led_2"] = msg.led2;
-        values["ID_${sensorId}_led_3"] = msg.led3;
+        values["ID_${msg.sensorId}_led_1"] = msg.led1;
+        values["ID_${msg.sensorId}_led_2"] = msg.led2;
+        values["ID_${msg.sensorId}_led_3"] = msg.led3;
+        values["ID_${msg.sensorId}_temperature_c"] = msg.temperature;
 
-        values["ID_${sensorId}_temperature"] = msg.temperature;
+        break;
 
+      default:
         break;
     }
 
@@ -83,7 +84,8 @@ class SensorDeserializer {
       sensorType: sensorType,
       sensorGroup: group,
       values: values,
-      timestamp: DateTime.now(),   // keep this
+      timestamp: DateTime.now(),
+      espTimestampMs: espTimestampMs,
     );
   }
 }

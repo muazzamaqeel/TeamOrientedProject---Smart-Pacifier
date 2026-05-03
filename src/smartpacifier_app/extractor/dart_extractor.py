@@ -1,10 +1,15 @@
 import os
 
 # Root directory to scan
-ROOT_DIR = r"C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib"
+ROOT_DIR = os.path.expanduser(
+    "~/git-hub/SmartPacifier-Tool/src/smartpacifier_app"
+)
 
-# Output file (next to this script)
-OUTPUT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dart_files_dump.txt")
+# Output file next to this script
+OUTPUT_FILE = os.path.join(
+    os.path.dirname(os.path.abspath(__file__)),
+    "dart_files_dump.txt"
+)
 
 
 def is_generated(path):
@@ -14,6 +19,10 @@ def is_generated(path):
 
 
 def main():
+    if not os.path.isdir(ROOT_DIR):
+        print(f"[ERROR] Folder does not exist: {ROOT_DIR}")
+        return
+
     with open(OUTPUT_FILE, "w", encoding="utf-8") as out:
         for root, dirs, files in os.walk(ROOT_DIR):
             for file in files:
@@ -25,7 +34,6 @@ def main():
                     out.write("=" * 80 + "\n")
 
                     if is_generated(full_path):
-                        # Only write the filename
                         out.write(f"(generated file – content skipped) {file}\n\n")
                     else:
                         try:

@@ -13,15 +13,20 @@ message IMUData {
 
   MotionVector acc = 2;   
   MotionVector gyro = 3;
+
+  uint64 timestamp_ms = 100;
 }
 
 message PPGData {
   int32 sensor_id = 1;
+
   int32 led_1 = 2;
   int32 led_2 = 3;
   int32 led_3 = 4;
 
   float temperature = 5;
+
+  uint64 timestamp_ms = 100;
 }
 
 message AIRFLOWData{
@@ -29,10 +34,13 @@ message AIRFLOWData{
   float temp_l = 7;
   float temp_r = 8;
   float temp_e = 9;
+
+  uint64 timestamp_ms = 100;
 }
 
 message PTData {
-    float temperature = 1;  
-    float pressure    = 2; 
-  }
-  
+  float temperature = 1;
+  float pressure = 2;
+
+  uint64 timestamp_ms = 100;
+}

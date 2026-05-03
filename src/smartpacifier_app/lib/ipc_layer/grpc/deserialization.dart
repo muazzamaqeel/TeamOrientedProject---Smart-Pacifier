@@ -78,6 +78,7 @@ class SensorDeserializer {
       sensorType: sensorType,
       sensorGroup: group,
       values: values,
+      timestamp: DateTime.now(),
     );
   }
 }

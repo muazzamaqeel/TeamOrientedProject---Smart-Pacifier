@@ -40,8 +40,6 @@ class _CampaignCreationState extends State<CampaignCreation>
 
   final ScrollController _logScroll = ScrollController();
 
-  int _nextX = 0;
-
   final _buffers = <String, Map<String, Map<String, List<FlSpot>>>>{};
 
   final _logs = <String>[];
@@ -136,7 +134,7 @@ f.attrs["protobuf"] = "sensor_data.proto"
 f.close()
 ''';
 
-    final result = await Process.run("python", ["-c", script]);
+    final result = await Process.run("python3", ["-c", script]);
 
     if (result.exitCode != 0) {
       throw Exception(
@@ -162,7 +160,7 @@ f.attrs["end_ts"] = "$endIso"
 f.close()
 ''';
 
-    await Process.run("python", ["-c", script]);
+    await Process.run("python3", ["-c", script]);
   }
 
   /// ================================
@@ -198,7 +196,7 @@ f.close()
     }
 
     _pythonRecorder = await Process.start(
-      "python",
+      "python3",
       [
         "lib/screens/campaign_monitoring/sessions/python_scripts/recorder.py",
         path
@@ -207,7 +205,6 @@ f.close()
 
     _buffers.clear();
     _logs.clear();
-    _nextX = 0;
     _isStoppingCampaign = false;
 
     _sub = Connector()
@@ -242,8 +239,12 @@ f.close()
     final payload = jsonEncode({
       "sensor": packet.sensorType,
       "pacifier": packet.pacifierId,
-      "timestamp": packet.timestamp.millisecondsSinceEpoch / 1000.0,
-      "values": packet.values
+      "topic": packet.topic,
+      "esp_timestamp_ms": packet.espTimestampMs,
+      "esp_time_label": packet.espTimeLabel,
+      "timestamp": packet.graphTimeSeconds,
+      "app_received_iso": packet.timestamp.toIso8601String(),
+      "values": packet.values,
     });
 
     _pythonRecorder!.stdin.writeln(payload);
@@ -255,7 +256,7 @@ f.close()
 
 void _onData(SensorPacket packet) {
 
-  final t = (_nextX++).toDouble();
+  final t = packet.graphTimeSeconds;
 
   if (!_selected.contains(packet.pacifierId)) {
     return;
@@ -297,13 +298,17 @@ void _onData(SensorPacket packet) {
   final deviceKey = '${packet.sensorGroup}_${packet.pacifierId}';
   final prevState = _contactState[deviceKey] ?? false;
 
-  if (hasContact){
+  if (hasContact) {
     _contactState[deviceKey] = true;
 
     _logs.add(
-      '[${DateTime.now().toIso8601String()}] '
+      '[APP=${DateTime.now().toIso8601String()}] '
+      '[ESP=${packet.espTimeLabel}] '
       '[${packet.sensorGroup}] '
-      'pacifier=${packet.pacifierId} → Human Detected',
+      'topic=${packet.topic ?? "-"}, '
+      'pacifier=${packet.pacifierId}, '
+      'type=${packet.sensorType}, '
+      'event=Human Detected',
     );
   }
 
@@ -311,20 +316,25 @@ void _onData(SensorPacket packet) {
     _contactState[deviceKey] = false;
 
     _logs.add(
-      '[${DateTime.now().toIso8601String()}] '
+      '[APP=${DateTime.now().toIso8601String()}] '
+      '[ESP=${packet.espTimeLabel}] '
       '[${packet.sensorGroup}] '
-      'pacifier=${packet.pacifierId} → Human not detected anymore',
+      'topic=${packet.topic ?? "-"}, '
+      'pacifier=${packet.pacifierId}, '
+      'type=${packet.sensorType}, '
+      'event=Human not detected anymore',
     );
   }
 
   /// original log (unchanged)
   final line =
-      '[${DateTime.now().toIso8601String()}] '
+      '[APP=${DateTime.now().toIso8601String()}] '
+      '[ESP=${packet.espTimeLabel}] '
       '[${packet.sensorGroup}] '
+      'topic=${packet.topic ?? "-"}, '
       'pacifier=${packet.pacifierId}, '
       'type=${packet.sensorType}, '
       'values=${packet.values}';
-
   _logs.add(line);
 
   if (_logs.length > 500) {
@@ -543,8 +553,12 @@ void _onData(SensorPacket packet) {
 
   Widget _buildLogCard(String line) {
 
-    final tsMatch = RegExp(r'^\[(.*?)\]').firstMatch(line);
-    final ts = tsMatch?.group(1) ?? '';
+    final espMatch = RegExp(r'\[ESP=(.*?)\]').firstMatch(line);
+    final appMatch = RegExp(r'\[APP=(.*?)\]').firstMatch(line);
+
+    final ts = espMatch != null
+        ? 'ESP ${espMatch.group(1)}'
+        : appMatch?.group(1) ?? '';
 
     final pacMatch = RegExp(r'pacifier=(\d+)').firstMatch(line);
     final pacifier = pacMatch?.group(1) ?? '?';
@@ -553,7 +567,9 @@ void _onData(SensorPacket packet) {
     final type = typeMatch?.group(1) ?? 'unknown';
 
     final valuesMatch = RegExp(r'values=\{(.*)\}').firstMatch(line);
-    final values = valuesMatch?.group(1) ?? '';
+    final eventMatch = RegExp(r'event=(.*)$').firstMatch(line);
+
+    final values = valuesMatch?.group(1) ?? eventMatch?.group(1) ?? '';
 
     Color typeColor;
 

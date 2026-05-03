@@ -28,8 +28,6 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
   final ScrollController _logScroll = ScrollController();
 
   late final TabController _tabController;
-  int _nextX = 0;
-
   int _packetCount = 0;
   final ValueNotifier<double> _hzNotifier = ValueNotifier(0);
   Timer? _hzTimer;
@@ -98,8 +96,10 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
         _needsRebuild = true;
 
         final line =
-            '[${DateTime.now().toIso8601String()}] '
+            '[APP=${DateTime.now().toIso8601String()}] '
+            '[ESP=${packet.espTimeLabel}] '
             '[${packet.sensorGroup}] '
+            'topic=${packet.topic ?? "-"}, '
             'pacifier=${packet.pacifierId}, '
             'type=${packet.sensorType}, '
             'values=${packet.values}';
@@ -148,7 +148,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
   void _handleSensorData(SensorPacket packet) {
 
-    final t = (_nextX++).toDouble();
+    final t = packet.graphTimeSeconds;
 
     final typeMap = _buffers.putIfAbsent(
       packet.sensorType,
@@ -220,8 +220,12 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
 
   Widget _buildLogCard(String line) {
 
-    final tsMatch = RegExp(r'^\[(.*?)\]').firstMatch(line);
-    final ts = tsMatch?.group(1) ?? '';
+    final espMatch = RegExp(r'\[ESP=(.*?)\]').firstMatch(line);
+    final appMatch = RegExp(r'\[APP=(.*?)\]').firstMatch(line);
+
+    final ts = espMatch != null
+        ? 'ESP ${espMatch.group(1)}'
+        : appMatch?.group(1) ?? '';
 
     final pacMatch = RegExp(r'pacifier=(\d+)').firstMatch(line);
     final pacifier = pacMatch?.group(1) ?? '?';
@@ -417,15 +421,17 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
                                     FontWeight.bold),
                               ),
                               const SizedBox(width: 10),
-                              _buildLiveBadge('pat_pressure'),
-                              _buildLiveBadge('pat_temperature'),
-                              _buildLiveBadge('airflow_raw_e'),
+                                _buildLiveBadge('pat_pressure_hpa'),
+                                _buildLiveBadge('pat_temperature_c'),
 
-                              /// ✅ PPG sensors (all 4)
-                              _buildLiveBadge('ppg_led_1_ID_1'),
-                              _buildLiveBadge('ppg_led_1_ID_2'),
-                              _buildLiveBadge('ppg_led_1_ID_3'),
-                              _buildLiveBadge('ppg_led_1_ID_4'),
+                                _buildLiveBadge('airflow_in0_c'),
+                                _buildLiveBadge('airflow_in1_c'),
+                                _buildLiveBadge('airflow_in2_c'),
+
+                                _buildLiveBadge('ppg_ID_1_led_1'),
+                                _buildLiveBadge('ppg_ID_1_led_2'),
+                                _buildLiveBadge('ppg_ID_1_led_3'),
+                                _buildLiveBadge('ppg_ID_1_temperature_c'),
                             ],
                           ),
                         ),
