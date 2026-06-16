@@ -16,6 +16,7 @@ Future<void> main() async {
 
   try {
     await localMosquittoBroker.start();
+    await Future.delayed(const Duration(seconds: 1));
   } catch (e) {
     debugPrint('Failed to start local Mosquitto: $e');
   }
