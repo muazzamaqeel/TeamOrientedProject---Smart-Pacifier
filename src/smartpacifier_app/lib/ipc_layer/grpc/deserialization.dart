@@ -2,12 +2,10 @@ import '../../generated/sensor_data.pb.dart' as protos;
 import 'sensor_packet.dart';
 
 class SensorDeserializer {
-
   static SensorPacket parse(
     String topic,
     List<int> payload,
   ) {
-
     final parts = topic.split('/');
 
     final pacifierId = parts.length > 1 ? parts[1] : "0";
@@ -17,7 +15,6 @@ class SensorDeserializer {
     final values = <String, num>{};
 
     switch (sensorType) {
-
       /// IMU SENSOR
       case "imu":
         final msg = protos.IMUData.fromBuffer(payload);
@@ -38,7 +35,6 @@ class SensorDeserializer {
       case "airflow":
         final msg = protos.AIRFLOWData.fromBuffer(payload);
 
-
         values["temp_l"] = msg.tempL;
         values["temp_r"] = msg.tempR;
         values["temp_e"] = msg.tempE;
@@ -46,7 +42,7 @@ class SensorDeserializer {
         break;
 
       /// PRESSURE + TEMPERATURE SENSOR (MS8607)
-      case "pat":   // <---- THIS WAS MISSING
+      case "pat":
         final msg = protos.PTData.fromBuffer(payload);
 
         values["temperature"] = msg.temperature;
@@ -54,22 +50,18 @@ class SensorDeserializer {
 
         break;
 
-      /// OPTIONAL PPG SENSOR
+      /// PPG SENSOR
       case "ppg":
-      final msg = protos.PPGData.fromBuffer(payload);
+        final msg = protos.PPGData.fromBuffer(payload);
 
-      values["sensor_id"] = msg.sensorId;
+        values["led_1"] = msg.led1;
+        values["led_2"] = msg.led2;
+        values["led_3"] = msg.led3;
+        values["temperature"] = msg.temperature;
 
-      values["led_1"] = msg.led1;
-      values["led_2"] = msg.led2;
-      values["led_3"] = msg.led3;
-
-      values["temperature"] = msg.temperature;
-
-      break;
+        break;
 
       default:
-        // Unknown sensor type
         break;
     }
 

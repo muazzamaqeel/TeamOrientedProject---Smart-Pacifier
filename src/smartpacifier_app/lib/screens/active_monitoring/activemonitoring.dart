@@ -145,40 +145,60 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
     }
   }
 
-  void _handleSensorData(SensorPacket packet) {
 
-    final t = packet.graphTimeSeconds;
 
-    final typeMap = _buffers.putIfAbsent(
-      packet.sensorType,
-      () => <String, Map<String, List<FlSpot>>>{},
-    );
+void _handleSensorData(SensorPacket packet) {
+  final t = packet.graphTimeSeconds;
 
-    final groupName =
-        '${packet.sensorGroup}_${packet.pacifierId}';
+  final typeMap = _buffers.putIfAbsent(
+    packet.sensorType,
+    () => <String, Map<String, List<FlSpot>>>{},
+  );
 
-    final groupMap = typeMap.putIfAbsent(
-      groupName,
-      () => <String, List<FlSpot>>{},
-    );
+  final groupName = '${packet.sensorGroup}_${packet.pacifierId}';
 
-    packet.values.forEach((key, value) {
+  final groupMap = typeMap.putIfAbsent(
+    groupName,
+    () => <String, List<FlSpot>>{},
+  );
 
-      final series =
-      groupMap.putIfAbsent(key, () => <FlSpot>[]);
+  packet.values.forEach((rawKey, value) {
+    String key = rawKey;
 
-      series.add(FlSpot(t, value.toDouble()));
+    /*
+     * PPG naming:
+     * The MQTT deserializer already converts PPG values to:
+     * ID1_LED1, ID1_LED2, ID1_LED3, ID1_TEMP
+     * ID2_LED1, ID2_LED2, ID2_LED3, ID2_TEMP
+     * ID3_LED1, ID3_LED2, ID3_LED3, ID3_TEMP
+     * ID4_LED1, ID4_LED2, ID4_LED3, ID4_TEMP
+     *
+     * Therefore, do not use pacifierId here.
+     * Keep the key exactly as it comes from SensorDeserializer.
+     */
+    if (packet.sensorType == 'ppg') {
+      final isValidPpgKey =
+          RegExp(r'^ID\d+_(LED1|LED2|LED3|TEMP)$').hasMatch(rawKey);
 
-      /// keep sliding window (oscilloscope style)
-      if (series.length > 150) {
-        series.removeAt(0);
+      if (!isValidPpgKey) {
+        return;
       }
 
-      /// update live value
-      _liveValues['${packet.sensorType}_$key'] =
-          value.toDouble();
-    });
-  }
+      key = rawKey;
+    }
+
+    final series = groupMap.putIfAbsent(key, () => <FlSpot>[]);
+
+    series.add(FlSpot(t, value.toDouble()));
+
+    if (series.length > 150) {
+      series.removeAt(0);
+    }
+
+    _liveValues['${packet.sensorType}_$key'] = value.toDouble();
+  });
+}
+
 
   @override
   void dispose() {
@@ -225,7 +245,7 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
         ? 'ESP ${espMatch.group(1)}'
         : '';
 
-    final pacMatch = RegExp(r'pacifier=(\d+)').firstMatch(line);
+    final pacMatch = RegExp(r'pacifier=([^,]+)').firstMatch(line);
     final pacifier = pacMatch?.group(1) ?? '?';
 
     final typeMatch = RegExp(r'type=(\w+)').firstMatch(line);
@@ -420,17 +440,17 @@ class _ActiveMonitoringState extends State<ActiveMonitoring>
                                     FontWeight.bold),
                               ),
                               const SizedBox(width: 10),
-                                _buildLiveBadge('pat_pressure_hpa'),
-                                _buildLiveBadge('pat_temperature_c'),
+                                  _buildLiveBadge('pat_pressure_hpa'),
+                                  _buildLiveBadge('pat_temperature_c'),
 
-                                _buildLiveBadge('airflow_in0_c'),
-                                _buildLiveBadge('airflow_in1_c'),
-                                _buildLiveBadge('airflow_in2_c'),
+                                  _buildLiveBadge('airflow_temp_l'),
+                                  _buildLiveBadge('airflow_temp_r'),
+                                  _buildLiveBadge('airflow_temp_e'),
 
-                                _buildLiveBadge('ppg_ID_1_led_1'),
-                                _buildLiveBadge('ppg_ID_1_led_2'),
-                                _buildLiveBadge('ppg_ID_1_led_3'),
-                                _buildLiveBadge('ppg_ID_1_temperature_c'),
+                                  _buildLiveBadge('ppg_ID${id}_LED1'),
+                                  _buildLiveBadge('ppg_ID${id}_LED2'),
+                                  _buildLiveBadge('ppg_ID${id}_LED3'),
+                                  _buildLiveBadge('ppg_ID${id}_TEMP'),
                             ],
                           ),
                         ),

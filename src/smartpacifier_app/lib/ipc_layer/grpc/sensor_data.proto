@@ -2,6 +2,13 @@ syntax = "proto3";
 
 package Protos;
 
+message SensorData {
+  string pacifier_id = 1;
+  string sensor_type = 2;
+  string sensor_group = 3;
+  map<string, bytes> data_map = 4;
+}
+
 message IMUData {
   message MotionVector {
     float x = 1;
@@ -10,30 +17,42 @@ message IMUData {
   }
 
   float temperature = 1;
-
-  MotionVector acc = 2;   
+  MotionVector acc = 2;
   MotionVector gyro = 3;
 
   uint64 timestamp_ms = 100;
 }
 
 message PPGData {
-  int32 sensor_id = 1;
+  message LedData {
+    int32 led_1 = 1;
+    int32 led_2 = 2;
+    int32 led_3 = 3;
+  }
 
-  int32 led_1 = 2;
-  int32 led_2 = 3;
-  int32 led_3 = 4;
+  message TemperatureData {
+    float temperature = 1;
+  }
 
-  float temperature = 5;
+  LedData led = 1;
+  TemperatureData temperature = 2;
 
   uint64 timestamp_ms = 100;
 }
 
-message AIRFLOWData{
-  // computed temperatures
+message AIRFLOWData {
   float temp_l = 7;
   float temp_r = 8;
   float temp_e = 9;
+
+  uint64 timestamp_ms = 100;
+}
+
+message TEMPERATUREData {
+  message VoltageData {
+    int32 voltage10k = 1;
+    int32 voltage1k = 2;
+  }
 
   uint64 timestamp_ms = 100;
 }

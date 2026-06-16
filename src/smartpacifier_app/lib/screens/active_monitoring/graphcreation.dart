@@ -32,9 +32,21 @@ class GraphCreation {
       }
 
       final measurementMap = <String, Map<String, List<FlSpot>>>{};
-
       combined.forEach((seriesName, spots) {
-        final measurement = seriesName.split(RegExp(r'[_\[]')).first;
+        String measurement;
+
+        if (sensorType == 'ppg') {
+          final match = RegExp(r'^(ID\d+)_(LED1|LED2|LED3|TEMP)$')
+              .firstMatch(seriesName);
+
+          if (match != null) {
+            measurement = '${match.group(1)!}_PPG';
+          } else {
+            measurement = 'PPG';
+          }
+        } else {
+          measurement = seriesName.split(RegExp(r'[_\[]')).first;
+        }
 
         measurementMap
             .putIfAbsent(measurement, () => <String, List<FlSpot>>{})[seriesName] =

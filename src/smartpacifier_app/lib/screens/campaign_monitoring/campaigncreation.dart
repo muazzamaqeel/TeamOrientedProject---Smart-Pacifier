@@ -276,22 +276,44 @@ void _onData(SensorPacket packet) {
   /// 🔥 NEW: contact detection
   bool hasContact = false;
 
-  packet.values.forEach((key, value) {
+  packet.values.forEach((rawKey, value) {
+    String key = rawKey;
+
+    /*
+    * PPG naming:
+    * The MQTT deserializer already converts PPG values to:
+    * ID1_LED1, ID1_LED2, ID1_LED3, ID1_TEMP
+    * ID2_LED1, ID2_LED2, ID2_LED3, ID2_TEMP
+    * ID3_LED1, ID3_LED2, ID3_LED3, ID3_TEMP
+    * ID4_LED1, ID4_LED2, ID4_LED3, ID4_TEMP
+    *
+    * Therefore, do not use pacifierId here.
+    * Keep the key exactly as it comes from SensorDeserializer.
+    */
+    if (packet.sensorType == 'ppg') {
+      final isValidPpgKey =
+          RegExp(r'^ID\d+_(LED1|LED2|LED3|TEMP)$').hasMatch(rawKey);
+
+      if (!isValidPpgKey) {
+        return;
+      }
+
+      key = rawKey;
+    }
 
     final v = value.toDouble();
 
-    if (key.contains("led") && v > 350) {
+    if (packet.sensorType == 'ppg' && key.contains('LED') && v > 350) {
       hasContact = true;
     }
 
-    final s = groupMap.putIfAbsent(key, () => []);
+    final s = groupMap.putIfAbsent(key, () => <FlSpot>[]);
 
     s.add(FlSpot(t, v));
 
     if (s.length > 300) {
       s.removeAt(0);
     }
-
   });
 
   /// NEW: state tracking

@@ -10,7 +10,7 @@ class SensorDeserializer {
   ) {
     final parts = topic.split('/');
 
-    // Expected:
+    // Expected topics:
     // Pacifier/0_1/imu
     // Pacifier/0_1/airflow
     // Pacifier/0_1/pat
@@ -34,7 +34,31 @@ class SensorDeserializer {
       return null;
     }
 
-    final pacifierId = rawPacifier.contains('_')
+    final topicParts = rawPacifier.split('_');
+
+    /*
+    * Topic examples:
+    *
+    * Pacifier/0_1/imu
+    * Pacifier/0_1/pat
+    * Pacifier/0_1/airflow
+    *
+    * For PPG:
+    * Pacifier/0_1/ppg
+    * Pacifier/0_2/ppg
+    * Pacifier/0_3/ppg
+    * Pacifier/0_4/ppg
+    *
+    * The second number is the PPG sensor ID, not a separate pacifier.
+    * Therefore all PPG sensors must stay under the same frontend pacifier.
+    */
+    final pacifierId = sensorType == 'ppg'
+        ? '1'
+        : rawPacifier.contains('_')
+            ? rawPacifier.split('_').last
+            : rawPacifier;
+
+    final ppgSensorId = rawPacifier.contains('_')
         ? rawPacifier.split('_').last
         : rawPacifier;
 
@@ -45,56 +69,81 @@ class SensorDeserializer {
     final values = <String, num>{};
     int? espTimestampMs;
 
-    switch (sensorType) {
-      case "imu":
-        final msg = protos.IMUData.fromBuffer(payload);
+    try {
+      switch (sensorType) {
+        case 'imu':
+          final msg = protos.IMUData.fromBuffer(payload);
 
-        espTimestampMs = msg.timestampMs.toInt();
+          espTimestampMs = msg.timestampMs.toInt();
 
-        values["temperature_c"] = msg.temperature;
+          values['temperature'] = msg.temperature;
 
-        values["acc_x_g"] = msg.acc.x;
-        values["acc_y_g"] = msg.acc.y;
-        values["acc_z_g"] = msg.acc.z;
+          values['acc_x'] = msg.acc.x;
+          values['acc_y'] = msg.acc.y;
+          values['acc_z'] = msg.acc.z;
 
-        values["gyro_x_dps"] = msg.gyro.x;
-        values["gyro_y_dps"] = msg.gyro.y;
-        values["gyro_z_dps"] = msg.gyro.z;
+          values['gyro_x'] = msg.gyro.x;
+          values['gyro_y'] = msg.gyro.y;
+          values['gyro_z'] = msg.gyro.z;
 
-        break;
+          break;
 
-      case "airflow":
-        final msg = protos.AIRFLOWData.fromBuffer(payload);
+        case 'airflow':
+          final msg = protos.AIRFLOWData.fromBuffer(payload);
 
-        espTimestampMs = msg.timestampMs.toInt();
+          espTimestampMs = msg.timestampMs.toInt();
 
-        values["in0_c"] = msg.tempL;
-        values["in1_c"] = msg.tempR;
-        values["in2_c"] = msg.tempE;
+          values['temp_l'] = msg.tempL;
+          values['temp_r'] = msg.tempR;
+          values['temp_e'] = msg.tempE;
 
-        break;
+          break;
 
-      case "pat":
-        final msg = protos.PTData.fromBuffer(payload);
+        case 'pat':
+          final msg = protos.PTData.fromBuffer(payload);
 
-        espTimestampMs = msg.timestampMs.toInt();
+          espTimestampMs = msg.timestampMs.toInt();
 
-        values["temperature_c"] = msg.temperature;
-        values["pressure_hpa"] = msg.pressure;
+          values['temperature_c'] = msg.temperature;
+          values['pressure_hpa'] = msg.pressure;
 
-        break;
+          break;
 
-      case "ppg":
+        case 'ppg':
         final msg = protos.PPGData.fromBuffer(payload);
 
         espTimestampMs = msg.timestampMs.toInt();
 
-        values["ID_${msg.sensorId}_led_1"] = msg.led1;
-        values["ID_${msg.sensorId}_led_2"] = msg.led2;
-        values["ID_${msg.sensorId}_led_3"] = msg.led3;
-        values["ID_${msg.sensorId}_temperature_c"] = msg.temperature;
+        /*
+        * All four MAX30101 sensors belong to the same frontend pacifier.
+        *
+        * MQTT topics:
+        * Pacifier/0_1/ppg -> PPG sensor ID 1
+        * Pacifier/0_2/ppg -> PPG sensor ID 2
+        * Pacifier/0_3/ppg -> PPG sensor ID 3
+        * Pacifier/0_4/ppg -> PPG sensor ID 4
+        */
+        final ppgId = ppgSensorId;
+
+        values['ID${ppgId}_LED1'] = msg.led.led1;
+        values['ID${ppgId}_LED2'] = msg.led.led2;
+        values['ID${ppgId}_LED3'] = msg.led.led3;
+        values['ID${ppgId}_TEMP'] = msg.temperature.temperature;
+
+        print(
+          'PPG topic=$topic '
+          'frontendPacifierId=$pacifierId '
+          'ppgSensorId=$ppgSensorId '
+          'ID${ppgId}_LED1=${msg.led.led1} '
+          'ID${ppgId}_LED2=${msg.led.led2} '
+          'ID${ppgId}_LED3=${msg.led.led3} '
+          'ID${ppgId}_TEMP=${msg.temperature.temperature}',
+        );
 
         break;
+      }
+    } catch (_) {
+      return null;
     }
 
     return SensorPacket(
