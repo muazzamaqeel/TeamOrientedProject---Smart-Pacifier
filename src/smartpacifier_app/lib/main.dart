@@ -1,7 +1,7 @@
-import 'ipc_layer/mqtt/local_mosquitto_broker.dart';
 import 'package:flutter/material.dart';
+
 import 'ipc_layer/mqtt/mqtt_service.dart';
-import 'ipc_layer/broker/local_broker_manager.dart';
+import 'ipc_layer/mqtt/local_mosquitto_broker.dart';
 import 'components/theme/lighttheme.dart';
 import 'components/theme/darktheme.dart';
 import 'components/sidebar/app_shell.dart';
@@ -11,8 +11,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await ConfigExtractor.init();
-
-  await localBrokerManager.start();
 
   runApp(const MyApp());
 
@@ -24,6 +22,7 @@ Future<void> main() async {
 
   await mqttService.connect();
 }
+
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
