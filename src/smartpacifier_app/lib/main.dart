@@ -1,3 +1,4 @@
+import 'ipc_layer/mqtt/local_mosquitto_broker.dart';
 import 'package:flutter/material.dart';
 import 'ipc_layer/mqtt/mqtt_service.dart';
 import 'ipc_layer/broker/local_broker_manager.dart';
@@ -15,7 +16,13 @@ Future<void> main() async {
 
   runApp(const MyApp());
 
-  mqttService.connect();
+  try {
+    await localMosquittoBroker.start();
+  } catch (e) {
+    debugPrint('Failed to start local Mosquitto: $e');
+  }
+
+  await mqttService.connect();
 }
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
