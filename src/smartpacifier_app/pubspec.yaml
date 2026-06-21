@@ -12,6 +12,9 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # mDNS / service discovery (lets the ESP32 find the broker by name)
+  nsd: ^5.0.1
+
   # MQTT
   mqtt_client: ^10.2.0
 

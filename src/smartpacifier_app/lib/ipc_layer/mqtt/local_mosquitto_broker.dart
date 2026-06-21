@@ -1,9 +1,11 @@
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
+import 'package:nsd/nsd.dart';
 
 class LocalMosquittoBroker {
   Process? _process;
+  Registration? _registration;
 
   bool get isRunning => _process != null;
 
@@ -47,9 +49,33 @@ class LocalMosquittoBroker {
       debugPrint('Mosquitto exited with code $code');
       _process = null;
     });
+
+    await _advertiseBroker();
+  }
+
+  /// Advertises the broker as "broker._mqtt._tcp" on the LAN so the ESP32
+  /// can find it via mDNS (broker.local) regardless of the PC's current IP.
+  Future<void> _advertiseBroker() async {
+    if (_registration != null) return;
+    try {
+      _registration = await register(
+        const Service(
+          name: 'broker',
+          type: '_mqtt._tcp',
+          port: 1883,
+        ),
+      );
+      debugPrint('[mosquitto] mDNS advertised: broker._mqtt._tcp:1883');
+    } catch (e) {
+      debugPrint('[mosquitto] mDNS advertise failed: $e');
+    }
   }
 
   Future<void> stop() async {
+    if (_registration != null) {
+      await unregister(_registration!);
+      _registration = null;
+    }
     _process?.kill();
     _process = null;
   }

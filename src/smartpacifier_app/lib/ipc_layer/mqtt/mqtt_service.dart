@@ -44,7 +44,7 @@ class MQTTService {
       await _cleanupOldClient();
 
       final newClient = MqttServerClient(
-        ConfigExtractor.host,
+        '127.0.0.1',
         'flutter_client_${DateTime.now().millisecondsSinceEpoch}',
       );
 

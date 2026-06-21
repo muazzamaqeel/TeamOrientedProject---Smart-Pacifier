@@ -9,7 +9,8 @@ class SensorPacket {
   /// Time when packet was received by Flutter app
   final DateTime timestamp;
 
-  /// ESP timestamp from protobuf timestamp_ms
+  /// ESP timestamp from protobuf timestamp_ms.
+  /// If ESP sends 0 or null, we ignore it and use app-relative time instead.
   final int? espTimestampMs;
 
   /// Raw MQTT payload
@@ -17,6 +18,8 @@ class SensorPacket {
 
   /// Original MQTT topic
   String? topic;
+
+  static final DateTime _graphStartTime = DateTime.now();
 
   SensorPacket({
     required this.pacifierId,
@@ -27,22 +30,37 @@ class SensorPacket {
     this.espTimestampMs,
   });
 
-  /// Timestamp used for graph x-axis and HDF5.
-  /// Prefer ESP time. Fallback to Flutter receive time.
-  double get graphTimeSeconds {
-    if (espTimestampMs != null) {
-      return espTimestampMs! / 1000.0;
-    }
-    return timestamp.millisecondsSinceEpoch / 1000.0;
+  bool get hasValidEspTimestamp {
+    return espTimestampMs != null && espTimestampMs! > 0;
   }
 
-  /// Pretty ESP timestamp like 00:07:53.271
-  String get espTimeLabel {
-    if (espTimestampMs == null) {
-      return timestamp.toIso8601String();
+  /// Timestamp used for graph x-axis and HDF5.
+  ///
+  /// Important:
+  /// ESP currently sends timestamp_ms as 0, so using it directly breaks
+  /// the graph and puts all points at x = 0.
+  ///
+  /// Therefore:
+  /// - use ESP timestamp only if it is > 0
+  /// - otherwise use app-relative receive time
+  double get graphTimeSeconds {
+    if (hasValidEspTimestamp) {
+      return espTimestampMs! / 1000.0;
     }
 
-    final d = Duration(milliseconds: espTimestampMs!);
+    return timestamp.difference(_graphStartTime).inMilliseconds / 1000.0;
+  }
+
+  /// Pretty timestamp label.
+  /// Uses ESP time if valid, otherwise app-relative time.
+  String get espTimeLabel {
+    final Duration d;
+
+    if (hasValidEspTimestamp) {
+      d = Duration(milliseconds: espTimestampMs!);
+    } else {
+      d = timestamp.difference(_graphStartTime);
+    }
 
     final hours = d.inHours.toString().padLeft(2, '0');
     final minutes = (d.inMinutes % 60).toString().padLeft(2, '0');

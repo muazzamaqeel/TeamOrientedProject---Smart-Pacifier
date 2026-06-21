@@ -4,6 +4,9 @@ import '../../generated/sensor_data.pb.dart' as protos;
 import 'sensor_packet.dart';
 
 class SensorDeserializer {
+  static int? _validTimestampMs(int value) {
+    return value > 0 ? value : null;
+  }
   static SensorPacket? parse(
     String topic,
     List<int> payload,
@@ -74,7 +77,7 @@ class SensorDeserializer {
         case 'imu':
           final msg = protos.IMUData.fromBuffer(payload);
 
-          espTimestampMs = msg.timestampMs.toInt();
+          espTimestampMs = _validTimestampMs(msg.timestampMs.toInt());
 
           values['temperature'] = msg.temperature;
 
@@ -91,8 +94,7 @@ class SensorDeserializer {
         case 'airflow':
           final msg = protos.AIRFLOWData.fromBuffer(payload);
 
-          espTimestampMs = msg.timestampMs.toInt();
-
+          espTimestampMs = _validTimestampMs(msg.timestampMs.toInt());
           values['temp_l'] = msg.tempL;
           values['temp_r'] = msg.tempR;
           values['temp_e'] = msg.tempE;
@@ -102,7 +104,7 @@ class SensorDeserializer {
         case 'pat':
           final msg = protos.PTData.fromBuffer(payload);
 
-          espTimestampMs = msg.timestampMs.toInt();
+          espTimestampMs = _validTimestampMs(msg.timestampMs.toInt());
 
           values['temperature_c'] = msg.temperature;
           values['pressure_hpa'] = msg.pressure;
@@ -112,7 +114,7 @@ class SensorDeserializer {
         case 'ppg':
         final msg = protos.PPGData.fromBuffer(payload);
 
-        espTimestampMs = msg.timestampMs.toInt();
+        espTimestampMs = _validTimestampMs(msg.timestampMs.toInt());
 
         /*
         * All four MAX30101 sensors belong to the same frontend pacifier.

@@ -1,43 +1,23 @@
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/test/widget_test.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\fl_chart_patch.dart
 ================================================================================
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+import 'package:flutter/widgets.dart';
 
-import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
-
-import 'package:smartpacifier_app/main.dart';
-
-void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
-  });
+/// Fl_Chart up through 0.60.0 still calls
+///   MediaQuery.boldTextOverride(context)
+/// which was removed in Flutter 3.7+.  We restore it here as a no-op.
+extension MediaQueryPatch on MediaQuery {
+  static bool get boldTextOverride => false;
 }
 
 
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/main.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\main.dart
 ================================================================================
 import 'package:flutter/material.dart';
+
 import 'ipc_layer/mqtt/mqtt_service.dart';
+import 'ipc_layer/mqtt/local_mosquitto_broker.dart';
 import 'components/theme/lighttheme.dart';
 import 'components/theme/darktheme.dart';
 import 'components/sidebar/app_shell.dart';
@@ -50,8 +30,14 @@ Future<void> main() async {
 
   runApp(const MyApp());
 
-  // Start MQTT after GUI is already running
-  mqttService.connect();
+  try {
+    await localMosquittoBroker.start();
+    await Future.delayed(const Duration(seconds: 1));
+  } catch (e) {
+    debugPrint('Failed to start local Mosquitto: $e');
+  }
+
+  await mqttService.connect();
 }
 
 class MyApp extends StatefulWidget {
@@ -81,21 +67,213 @@ class _MyAppState extends State<MyApp> {
   }
 }
 
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/fl_chart_patch.dart
-================================================================================
-import 'package:flutter/widgets.dart';
 
-/// Fl_Chart up through 0.60.0 still calls
-///   MediaQuery.boldTextOverride(context)
-/// which was removed in Flutter 3.7+.  We restore it here as a no-op.
-extension MediaQueryPatch on MediaQuery {
-  static bool get boldTextOverride => false;
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\client_layer\connector.dart
+================================================================================
+import 'dart:async';
+
+import '../ipc_layer/mqtt/mqtt_service.dart';
+import '../ipc_layer/mqtt/sensor_packet.dart';
+
+class Connector {
+
+  Connector._internal() {
+    _initDetection();
+  }
+
+  static final Connector _instance = Connector._internal();
+
+  factory Connector() => _instance;
+
+  final Set<String> _clients = {};
+
+  final _ctrl = StreamController<List<String>>.broadcast();
+
+  Stream<List<String>> get clientsStream => _ctrl.stream;
+
+  List<String> get clients => List.unmodifiable(_clients);
+
+  void _initDetection() {
+
+    mqttService.stream.listen((packet) {
+
+      final backend = packet.sensorGroup;
+
+      if (backend.isNotEmpty) {
+        addClient(backend);
+      }
+    });
+  }
+
+  void addClient(String name) {
+
+    if (_clients.add(name)) {
+
+      _ctrl.add(_clients.toList());
+    }
+  }
+
+  Stream<SensorPacket> dataStreamFor(String clientId) {
+
+    return mqttService.stream.where((sd) {
+
+      return sd.sensorGroup == clientId;
+    });
+  }
 }
 
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sidebar\app_shell.dart
+================================================================================
+import 'package:flutter/material.dart';
+import 'package:smartpacifier_app/client_layer/connector.dart';
+import 'package:smartpacifier_app/components/sidebar/sidebar.dart';
+import 'package:smartpacifier_app/ipc_layer/mqtt/mqtt_service.dart';
+import 'package:smartpacifier_app/screens/active_monitoring/activemonitoring.dart';
+import 'package:smartpacifier_app/screens/campaign_monitoring/campaigncreation.dart';
+import 'package:smartpacifier_app/screens/historic_data/historicdata.dart';
+import 'package:smartpacifier_app/screens/settings/settings.dart';
+
+class AppShell extends StatefulWidget {
+  final bool isDark;
+  final ValueChanged<bool> onThemeChanged;
+
+  const AppShell({
+    Key? key,
+    required this.isDark,
+    required this.onThemeChanged,
+  }) : super(key: key);
+
+  @override
+  State<AppShell> createState() => _AppShellState();
+}
+
+class _AppShellState extends State<AppShell> {
+  final Connector _connector = Connector();
+  List<String> _clients = [];
+  String? _selectedClient;
+  SidebarItem _selectedItem = SidebarItem.activeMonitoring;
+  bool _railExtended = true;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _connector.clientsStream.listen((list) {
+      if (!mounted) return;
+      setState(() {
+        _clients = list;
+        _selectedClient ??= list.isNotEmpty ? list.first : null;
+      });
+    });
+  }
+
+  Widget _buildContent() {
+    if (_selectedItem == SidebarItem.historicData) {
+      return const HistoricData();
+    }
+
+    if (_selectedClient == null) {
+      return Center(
+        child: ValueListenableBuilder<String>(
+          valueListenable: mqttService.statusMessage,
+          builder: (_, status, __) => Text(
+            'No backend selected\n$status',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    switch (_selectedItem) {
+      case SidebarItem.activeMonitoring:
+        return ActiveMonitoring(backend: _selectedClient!);
+      case SidebarItem.campaignCreation:
+        return CampaignCreation(backend: _selectedClient!);
+      case SidebarItem.historicData:
+        return const SizedBox();
+      case SidebarItem.settings:
+        return Settings(
+          backend: _selectedClient!,
+          isDark: widget.isDark,
+          onThemeChanged: widget.onThemeChanged,
+        );
+    }
+  }
+
+  Color _statusColor(MqttConnectionStatus status) {
+    switch (status) {
+      case MqttConnectionStatus.connected:
+        return Colors.green;
+      case MqttConnectionStatus.connecting:
+        return Colors.orange;
+      case MqttConnectionStatus.error:
+        return Colors.red;
+      case MqttConnectionStatus.disconnected:
+        return Colors.grey;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Row(
+        children: [
+          Sidebar(
+            clients: _clients,
+            selectedClient: _selectedClient,
+            onClientSelected: (c) => setState(() {
+              _selectedClient = c;
+              _selectedItem = SidebarItem.activeMonitoring;
+            }),
+            selectedItem: _selectedItem,
+            onItemSelected: (s) => setState(() => _selectedItem = s),
+            isExtended: _railExtended,
+            onToggle: () => setState(() => _railExtended = !_railExtended),
+          ),
+          Expanded(
+            child: Column(
+              children: [
+                ValueListenableBuilder<MqttConnectionStatus>(
+                  valueListenable: mqttService.connectionStatus,
+                  builder: (_, status, __) {
+                    return ValueListenableBuilder<String>(
+                      valueListenable: mqttService.statusMessage,
+                      builder: (_, text, __) => Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        color: _statusColor(status).withOpacity(0.15),
+                        child: Row(
+                          children: [
+                            Icon(Icons.circle, size: 12, color: _statusColor(status)),
+                            const SizedBox(width: 8),
+                            Expanded(child: Text(text)),
+                            TextButton(
+                              onPressed: mqttService.reconnect,
+                              child: const Text('Reconnect'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                Expanded(child: _buildContent()),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/components/sidebar/sidebar.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sidebar\sidebar.dart
 ================================================================================
 import 'package:flutter/material.dart';
 
@@ -262,156 +440,7 @@ class Sidebar extends StatelessWidget {
 }
 
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/components/sidebar/app_shell.dart
-================================================================================
-import 'package:flutter/material.dart';
-import 'package:smartpacifier_app/client_layer/connector.dart';
-import 'package:smartpacifier_app/components/sidebar/sidebar.dart';
-import 'package:smartpacifier_app/ipc_layer/mqtt/mqtt_service.dart';
-import 'package:smartpacifier_app/screens/active_monitoring/activemonitoring.dart';
-import 'package:smartpacifier_app/screens/campaign_monitoring/campaigncreation.dart';
-import 'package:smartpacifier_app/screens/historic_data/historicdata.dart';
-import 'package:smartpacifier_app/screens/settings/settings.dart';
-
-class AppShell extends StatefulWidget {
-  final bool isDark;
-  final ValueChanged<bool> onThemeChanged;
-
-  const AppShell({
-    Key? key,
-    required this.isDark,
-    required this.onThemeChanged,
-  }) : super(key: key);
-
-  @override
-  State<AppShell> createState() => _AppShellState();
-}
-
-class _AppShellState extends State<AppShell> {
-  final Connector _connector = Connector();
-  List<String> _clients = [];
-  String? _selectedClient;
-  SidebarItem _selectedItem = SidebarItem.activeMonitoring;
-  bool _railExtended = true;
-
-  @override
-  void initState() {
-    super.initState();
-
-    _connector.clientsStream.listen((list) {
-      if (!mounted) return;
-      setState(() {
-        _clients = list;
-        _selectedClient ??= list.isNotEmpty ? list.first : null;
-      });
-    });
-  }
-
-  Widget _buildContent() {
-    if (_selectedItem == SidebarItem.historicData) {
-      return const HistoricData();
-    }
-
-    if (_selectedClient == null) {
-      return Center(
-        child: ValueListenableBuilder<String>(
-          valueListenable: mqttService.statusMessage,
-          builder: (_, status, __) => Text(
-            'No backend selected\n$status',
-            textAlign: TextAlign.center,
-          ),
-        ),
-      );
-    }
-
-    switch (_selectedItem) {
-      case SidebarItem.activeMonitoring:
-        return ActiveMonitoring(backend: _selectedClient!);
-      case SidebarItem.campaignCreation:
-        return CampaignCreation(backend: _selectedClient!);
-      case SidebarItem.historicData:
-        return const SizedBox();
-      case SidebarItem.settings:
-        return Settings(
-          backend: _selectedClient!,
-          isDark: widget.isDark,
-          onThemeChanged: widget.onThemeChanged,
-        );
-    }
-  }
-
-  Color _statusColor(MqttConnectionStatus status) {
-    switch (status) {
-      case MqttConnectionStatus.connected:
-        return Colors.green;
-      case MqttConnectionStatus.connecting:
-        return Colors.orange;
-      case MqttConnectionStatus.error:
-        return Colors.red;
-      case MqttConnectionStatus.disconnected:
-        return Colors.grey;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Row(
-        children: [
-          Sidebar(
-            clients: _clients,
-            selectedClient: _selectedClient,
-            onClientSelected: (c) => setState(() {
-              _selectedClient = c;
-              _selectedItem = SidebarItem.activeMonitoring;
-            }),
-            selectedItem: _selectedItem,
-            onItemSelected: (s) => setState(() => _selectedItem = s),
-            isExtended: _railExtended,
-            onToggle: () => setState(() => _railExtended = !_railExtended),
-          ),
-          Expanded(
-            child: Column(
-              children: [
-                ValueListenableBuilder<MqttConnectionStatus>(
-                  valueListenable: mqttService.connectionStatus,
-                  builder: (_, status, __) {
-                    return ValueListenableBuilder<String>(
-                      valueListenable: mqttService.statusMessage,
-                      builder: (_, text, __) => Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
-                        ),
-                        color: _statusColor(status).withOpacity(0.15),
-                        child: Row(
-                          children: [
-                            Icon(Icons.circle, size: 12, color: _statusColor(status)),
-                            const SizedBox(width: 8),
-                            Expanded(child: Text(text)),
-                            TextButton(
-                              onPressed: mqttService.reconnect,
-                              child: const Text('Reconnect'),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-                Expanded(child: _buildContent()),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/components/theme/darktheme.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\components\theme\darktheme.dart
 ================================================================================
 import 'package:flutter/material.dart';
 
@@ -470,7 +499,7 @@ final ThemeData darkTheme = ThemeData(
 );
 
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/components/theme/lighttheme.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\components\theme\lighttheme.dart
 ================================================================================
 import 'package:flutter/material.dart';
 
@@ -494,266 +523,791 @@ final ThemeData lightTheme = ThemeData(
 
 
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/screens/historic_data/historicdata.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\broker\local_broker_manager.dart
+================================================================================
+import 'dart:async';
+import 'dart:io';
+
+class LocalBrokerManager {
+  Process? _process;
+
+  Future<void> start() async {
+    if (!Platform.isWindows && !Platform.isLinux && !Platform.isMacOS) {
+      throw UnsupportedError('Local broker is only supported on desktop.');
+    }
+
+    final exePath = _brokerExecutablePath();
+    final configPath = _brokerConfigPath();
+
+    if (!File(exePath).existsSync()) {
+      throw Exception('Mosquitto executable not found: $exePath');
+    }
+
+    if (!File(configPath).existsSync()) {
+      throw Exception('Mosquitto config not found: $configPath');
+    }
+
+    if (await _isBrokerRunning()) {
+      return;
+    }
+
+    _process = await Process.start(
+      exePath,
+      ['-c', configPath, '-v'],
+      runInShell: false,
+    );
+
+    _process!.stdout.transform(SystemEncoding().decoder).listen((line) {
+      print('[BROKER] $line');
+    });
+
+    _process!.stderr.transform(SystemEncoding().decoder).listen((line) {
+      print('[BROKER ERROR] $line');
+    });
+
+    await _waitUntilReady();
+  }
+
+  Future<bool> _isBrokerRunning() async {
+    try {
+      final socket = await Socket.connect(
+        '127.0.0.1',
+        1883,
+        timeout: const Duration(milliseconds: 500),
+      );
+      socket.destroy();
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<void> _waitUntilReady() async {
+    for (int i = 0; i < 20; i++) {
+      if (await _isBrokerRunning()) return;
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+
+    throw Exception('Local MQTT broker did not start.');
+  }
+
+  String _brokerExecutablePath() {
+    final base = Directory.current.path;
+
+    if (Platform.isWindows) {
+      return '$base/broker/windows/mosquitto.exe';
+    }
+
+    if (Platform.isLinux) {
+      return '$base/broker/linux/mosquitto';
+    }
+
+    if (Platform.isMacOS) {
+      return '$base/broker/macos/mosquitto';
+    }
+
+    throw UnsupportedError('Unsupported platform');
+  }
+
+  String _brokerConfigPath() {
+    return '${Directory.current.path}/broker/mosquitto.conf';
+  }
+
+  void stop() {
+    _process?.kill();
+    _process = null;
+  }
+}
+
+final localBrokerManager = LocalBrokerManager();
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\deserialization.dart
+================================================================================
+import '../../generated/sensor_data.pb.dart' as protos;
+import 'sensor_packet.dart';
+
+class SensorDeserializer {
+  static SensorPacket parse(
+    String topic,
+    List<int> payload,
+  ) {
+    final parts = topic.split('/');
+
+    final pacifierId = parts.length > 1 ? parts[1] : "0";
+    final sensorType = parts.length > 2 ? parts[2] : "unknown";
+    final group = parts.length > 0 ? parts[0] : "backend";
+
+    final values = <String, num>{};
+
+    switch (sensorType) {
+      /// IMU SENSOR
+      case "imu":
+        final msg = protos.IMUData.fromBuffer(payload);
+
+        values["temperature"] = msg.temperature;
+
+        values["acc_x"] = msg.acc.x;
+        values["acc_y"] = msg.acc.y;
+        values["acc_z"] = msg.acc.z;
+
+        values["gyro_x"] = msg.gyro.x;
+        values["gyro_y"] = msg.gyro.y;
+        values["gyro_z"] = msg.gyro.z;
+
+        break;
+
+      /// AIRFLOW SENSOR
+      case "airflow":
+        final msg = protos.AIRFLOWData.fromBuffer(payload);
+
+        values["temp_l"] = msg.tempL;
+        values["temp_r"] = msg.tempR;
+        values["temp_e"] = msg.tempE;
+
+        break;
+
+      /// PRESSURE + TEMPERATURE SENSOR (MS8607)
+      case "pat":
+        final msg = protos.PTData.fromBuffer(payload);
+
+        values["temperature"] = msg.temperature;
+        values["pressure"] = msg.pressure;
+
+        break;
+
+      /// PPG SENSOR
+      case "ppg":
+        final msg = protos.PPGData.fromBuffer(payload);
+
+        values["led_1"] = msg.led1;
+        values["led_2"] = msg.led2;
+        values["led_3"] = msg.led3;
+        values["temperature"] = msg.temperature;
+
+        break;
+
+      default:
+        break;
+    }
+
+    return SensorPacket(
+      pacifierId: pacifierId,
+      sensorType: sensorType,
+      sensorGroup: group,
+      values: values,
+      timestamp: DateTime.now(),
+    );
+  }
+}
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\server.dart
+================================================================================
+// File: ipc_layer/grpc/server.dart
+
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:grpc/grpc.dart';
+import 'package:smartpacifier_app/generated/myservice.pbgrpc.dart';
+import 'package:smartpacifier_app/generated/google/protobuf/empty.pb.dart';
+
+class MyServiceImpl extends MyServiceBase {
+  /// Broadcast controller in synchronous mode: delivers each add() immediately.
+  final _controller = StreamController<PayloadMessage>.broadcast(sync: true);
+
+  @override
+  Future<Empty> publishSensorData(
+      ServiceCall call,
+      Stream<PayloadMessage> request,
+      ) async {
+    // Extract backend identifier from metadata
+    final backendName = call.clientMetadata?['backend-name'] ?? 'unknown_backend';
+    debugPrint('publishSensorData() started for $backendName');
+
+    await for (final msg in request) {
+      // Tag the payload with its source
+      msg.sensorData.sensorGroup = backendName;
+
+      // Log the deserialized payload with actual values
+      final timestamp = DateTime.now().toIso8601String();
+      debugPrint(
+        '[$timestamp] '
+            '[$backendName] '
+            'pacifier=${msg.sensorData.pacifierId}, '
+            'type=${msg.sensorData.sensorType}, '
+            'group=${msg.sensorData.sensorGroup}, '
+            'data=${msg.sensorData.dataMap}',
+      );
+
+      // Forward immediately to Flutter listeners
+      _controller.add(msg);
+    }
+
+    debugPrint('publishSensorData() completed for $backendName');
+    return Empty();
+  }
+
+  @override
+  Stream<PayloadMessage> get onSensorData => _controller.stream;
+}
+
+/// Shared instance for Connector to import
+final myService = MyServiceImpl();
+
+/// Starts the gRPC server on [port] (default: 50051)
+Future<void> startGrpcServer({int port = 50051}) async {
+  final server = await Server.create(
+    services: [myService],
+    codecRegistry: CodecRegistry(codecs: [GzipCodec(), IdentityCodec()]),
+  );
+  await server.serve(port: port);
+  debugPrint('gRPC server listening on port \$port');
+}
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pb.dart
+================================================================================
+(generated file – content skipped) empty.pb.dart
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pbenum.dart
+================================================================================
+(generated file – content skipped) empty.pbenum.dart
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pbjson.dart
+================================================================================
+(generated file – content skipped) empty.pbjson.dart
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pb.dart
+================================================================================
+(generated file – content skipped) wrappers.pb.dart
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pbenum.dart
+================================================================================
+(generated file – content skipped) wrappers.pbenum.dart
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pbjson.dart
+================================================================================
+(generated file – content skipped) wrappers.pbjson.dart
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\local_mosquitto_broker.dart
 ================================================================================
 import 'dart:io';
-import 'package:flutter/material.dart';
 
-class HistoricData extends StatefulWidget {
-  const HistoricData({Key? key}) : super(key: key);
+import 'package:flutter/foundation.dart';
+import 'package:nsd/nsd.dart';
 
-  @override
-  State<HistoricData> createState() => _HistoricDataState();
-}
+class LocalMosquittoBroker {
+  Process? _process;
+  Registration? _registration;
 
-class _HistoricDataState extends State<HistoricData> {
-  final ScrollController _verticalCtrl = ScrollController();
-  final ScrollController _horizontalCtrl = ScrollController();
+  bool get isRunning => _process != null;
 
-  final List<Map<String, String>> _rows = [];
-  final List<String> _columns = [];
-  int _currentPage = 1;
-  final int _rowsPerPage = 20;
-  bool _hasPrompted = false;
-
-  final TextEditingController _pageInput = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _pageInput.text = '1';
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_hasPrompted) {
-      _hasPrompted = true;
-      WidgetsBinding.instance.addPostFrameCallback((_) => _promptAndLoad());
+  Future<void> start() async {
+    if (!Platform.isWindows) {
+      debugPrint('Local Mosquitto auto-start is only enabled on Windows.');
+      return;
     }
-  }
 
-  @override
-  void dispose() {
-    _verticalCtrl.dispose();
-    _horizontalCtrl.dispose();
-    _pageInput.dispose();
-    super.dispose();
-  }
+    if (_process != null) return;
 
-  Future<void> _promptAndLoad() async {
-    final controller = TextEditingController();
-    final path = await showDialog<String>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Open Historic Data File'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            labelText: 'Full path to .txt file',
-            hintText: '/path/to/logs.txt',
-          ),
-        ),
-        actions: [
-          TextButton(
-            child: const Text('Cancel'),
-            onPressed: () => Navigator.of(ctx).pop(),
-          ),
-          ElevatedButton(
-            child: const Text('Open'),
-            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
-          ),
-        ],
-      ),
+    final brokerDir = _findMosquittoDirectory();
+
+    final exePath = '${brokerDir.path}\\mosquitto.exe';
+    final configPath = '${brokerDir.path}\\mosquitto.conf';
+
+    if (!File(exePath).existsSync()) {
+      throw FileSystemException('mosquitto.exe not found', exePath);
+    }
+
+    if (!File(configPath).existsSync()) {
+      throw FileSystemException('mosquitto.conf not found', configPath);
+    }
+
+    _process = await Process.start(
+      exePath,
+      ['-c', configPath],
+      workingDirectory: brokerDir.path,
+      runInShell: false,
     );
-    if (path == null || path.isEmpty) return;
 
+    _process!.stdout.transform(systemEncoding.decoder).listen((line) {
+      debugPrint('[mosquitto] $line');
+    });
+
+    _process!.stderr.transform(systemEncoding.decoder).listen((line) {
+      debugPrint('[mosquitto] $line');
+    });
+
+    _process!.exitCode.then((code) {
+      debugPrint('Mosquitto exited with code $code');
+      _process = null;
+    });
+
+    await _advertiseBroker();
+  }
+
+  /// Advertises the broker as "broker._mqtt._tcp" on the LAN so the ESP32
+  /// can find it via mDNS (broker.local) regardless of the PC's current IP.
+  Future<void> _advertiseBroker() async {
+    if (_registration != null) return;
     try {
-      final lines = await File(path).readAsLines();
-      _parseLines(lines);
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to open file: $e')),
+      _registration = await register(
+        const Service(
+          name: 'broker',
+          type: '_mqtt._tcp',
+          port: 1883,
+        ),
       );
+      debugPrint('[mosquitto] mDNS advertised: broker._mqtt._tcp:1883');
+    } catch (e) {
+      debugPrint('[mosquitto] mDNS advertise failed: $e');
     }
   }
 
-  void _parseLines(List<String> lines) {
-    final cols = <String>{'timestamp', 'pacifier', 'type', 'group'};
-    final parsed = <Map<String, String>>[];
+  Future<void> stop() async {
+    if (_registration != null) {
+      await unregister(_registration!);
+      _registration = null;
+    }
+    _process?.kill();
+    _process = null;
+  }
 
-    for (final line in lines) {
-      final tsMatch = RegExp(r'^\[(.*?)\]').firstMatch(line);
-      final ts = tsMatch?.group(1) ?? '';
-      final rest = line.replaceFirst(RegExp(r'^\[.*?\]\s*'), '');
-      final parts = rest.split(', data=');
-      final left = parts[0];
-      final dataPart = parts.length > 1
-          ? parts[1].replaceFirst(RegExp(r'^\{|\}$'), '')
-          : '';
+  Directory _findMosquittoDirectory() {
+    final exeDir = File(Platform.resolvedExecutable).parent.path;
 
-      final row = <String, String>{};
-      row['timestamp'] = ts;
+    final candidates = <Directory>[
+      Directory('${Directory.current.path}\\assets\\mosquitto'),
+      Directory('$exeDir\\mosquitto'),
+      Directory('$exeDir\\data\\flutter_assets\\assets\\mosquitto'),
+    ];
 
-      for (final kv in left.split(', ')) {
-        final kvp = kv.split('=');
-        if (kvp.length == 2) row[kvp[0]] = kvp[1];
+    for (final dir in candidates) {
+      if (File('${dir.path}\\mosquitto.exe').existsSync()) {
+        return dir;
       }
-
-      if (dataPart.isNotEmpty) {
-        for (final entry in dataPart.split(RegExp(r'\],\s*'))) {
-          final m = RegExp(r'([^:\s]+):\[(.*)\]').firstMatch(entry + ']');
-          if (m != null) {
-            final key = m.group(1)!;
-            var val = m.group(2)!;
-            // strip any trailing ']' or '}'
-            val = val.replaceAll(RegExp(r'[\]\}]+$'), '');
-            row[key] = val;
-            cols.add(key);
-          }
-        }
-      }
-      parsed.add(row);
     }
 
-    final ordered = <String>[];
-    ordered.addAll(['timestamp', 'pacifier', 'type', 'group']);
-    ordered.addAll(cols
-        .where((c) => !['timestamp', 'pacifier', 'type', 'group'].contains(c))
-        .toList()
-      ..sort());
-
-    setState(() {
-      _rows
-        ..clear()
-        ..addAll(parsed);
-      _columns
-        ..clear()
-        ..addAll(ordered);
-      _currentPage = 1;
-      _pageInput.text = '1';
-    });
-  }
-
-  void _goToPage(int p) {
-    final totalPages = (_rows.length + _rowsPerPage - 1) ~/ _rowsPerPage;
-    final target = p.clamp(1, totalPages);
-    setState(() {
-      _currentPage = target;
-      _pageInput.text = '$target';
-      _verticalCtrl.jumpTo(0);
-      _horizontalCtrl.jumpTo(0);
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final totalPages = (_rows.length + _rowsPerPage - 1) ~/ _rowsPerPage;
-    final start = (_currentPage - 1) * _rowsPerPage;
-    final pageRows = _rows.skip(start).take(_rowsPerPage).toList();
-
-    return Scaffold(
-      appBar: AppBar(title: const Text('Historic Data')),
-      body: _rows.isEmpty
-          ? const Center(child: Text('No data loaded'))
-          : Column(
-        children: [
-          // ── Pagination Controls ──────────────────────────
-          Padding(
-            padding: const EdgeInsets.all(8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: _currentPage > 1
-                      ? () => _goToPage(_currentPage - 1)
-                      : null,
-                ),
-                SizedBox(
-                  width: 60,
-                  child: TextField(
-                    controller: _pageInput,
-                    textAlign: TextAlign.center,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                    ),
-                    keyboardType: TextInputType.number,
-                    onSubmitted: (v) {
-                      final p = int.tryParse(v) ?? _currentPage;
-                      _goToPage(p);
-                    },
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text('/ $totalPages'),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: _currentPage < totalPages
-                      ? () => _goToPage(_currentPage + 1)
-                      : null,
-                ),
-              ],
-            ),
-          ),
-
-          // ── Data Table with Dual Scrollbars ──────────────
-          Expanded(
-            child: Scrollbar(
-              controller: _verticalCtrl,
-              thumbVisibility: true,
-              child: SingleChildScrollView(
-                controller: _verticalCtrl,
-                child: Scrollbar(
-                  controller: _horizontalCtrl,
-                  thumbVisibility: true,
-                  notificationPredicate: (n) =>
-                  n.metrics.axis == Axis.horizontal,
-                  child: SingleChildScrollView(
-                    controller: _horizontalCtrl,
-                    scrollDirection: Axis.horizontal,
-                    child: DataTable(
-                      headingRowColor: MaterialStateProperty.all(
-                          Colors.grey.shade800),
-                      columns: _columns
-                          .map((c) => DataColumn(
-                        label: Text(
-                          c[0].toUpperCase() + c.substring(1),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
-                        ),
-                      ))
-                          .toList(),
-                      rows: pageRows.map((row) {
-                        return DataRow(
-                          cells: _columns.map((col) {
-                            return DataCell(
-                              ConstrainedBox(
-                                constraints:
-                                const BoxConstraints(maxWidth: 150),
-                                child: Text(row[col] ?? ''),
-                              ),
-                            );
-                          }).toList(),
-                        );
-                      }).toList(),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+    throw FileSystemException(
+      'Could not find bundled Mosquitto folder. Checked:',
+      candidates.map((d) => d.path).join('\n'),
     );
   }
 }
 
+final localMosquittoBroker = LocalMosquittoBroker();
 
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/screens/active_monitoring/activemonitoring.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\mqtt_service.dart
+================================================================================
+import 'dart:async';
+import 'package:flutter/foundation.dart';
+import 'package:mqtt_client/mqtt_client.dart';
+import 'package:mqtt_client/mqtt_server_client.dart';
+
+import '../../screens/settings/configuration/configextractor.dart';
+import 'sensor_packet.dart';
+import 'sensor_deserializer.dart';
+
+enum MqttConnectionStatus {
+  disconnected,
+  connecting,
+  connected,
+  error,
+}
+
+class MQTTService {
+  MqttServerClient? client;
+
+  StreamSubscription? _mqttSub;
+
+  final StreamController<SensorPacket> _controller =
+      StreamController<SensorPacket>.broadcast();
+
+  final ValueNotifier<MqttConnectionStatus> connectionStatus =
+      ValueNotifier<MqttConnectionStatus>(MqttConnectionStatus.disconnected);
+
+  final ValueNotifier<String> statusMessage =
+      ValueNotifier<String>('Disconnected');
+
+  Stream<SensorPacket> get stream => _controller.stream;
+
+  bool _isConnecting = false;
+
+  Future<void> connect() async {
+    if (_isConnecting) return;
+    _isConnecting = true;
+
+    try {
+      connectionStatus.value = MqttConnectionStatus.connecting;
+      statusMessage.value =
+          'Connecting to ${ConfigExtractor.host}:${ConfigExtractor.port}...';
+
+      await _cleanupOldClient();
+
+      final newClient = MqttServerClient(
+        '127.0.0.1',
+        'flutter_client_${DateTime.now().millisecondsSinceEpoch}',
+      );
+
+      newClient.port = ConfigExtractor.port;
+      newClient.keepAlivePeriod = 20;
+      newClient.logging(on: false);
+      newClient.autoReconnect = true;
+      newClient.resubscribeOnAutoReconnect = true;
+
+      newClient.onConnected = _onConnected;
+      newClient.onDisconnected = _onDisconnected;
+
+      newClient.onSubscribed = (topic) {
+        statusMessage.value = 'Subscribed to $topic';
+      };
+
+      newClient.onAutoReconnect = () {
+        connectionStatus.value = MqttConnectionStatus.connecting;
+        statusMessage.value = 'Reconnecting...';
+      };
+
+      newClient.onAutoReconnected = () {
+        connectionStatus.value = MqttConnectionStatus.connected;
+        statusMessage.value = 'Reconnected to Pacifier/#';
+
+        try {
+          newClient.subscribe('Pacifier/#', MqttQos.atLeastOnce);
+        } catch (_) {}
+      };
+
+      final connMess = MqttConnectMessage()
+          .withClientIdentifier(
+            'flutter_client_${DateTime.now().millisecondsSinceEpoch}',
+          )
+          .startClean();
+
+      newClient.connectionMessage = connMess;
+
+      client = newClient;
+
+      await newClient.connect();
+
+      if (newClient.connectionStatus?.state != MqttConnectionState.connected) {
+        connectionStatus.value = MqttConnectionStatus.error;
+        statusMessage.value =
+            'MQTT connection failed: ${newClient.connectionStatus?.state}';
+        return;
+      }
+
+      _listenToMessages(newClient);
+
+      newClient.subscribe('Pacifier/#', MqttQos.atLeastOnce);
+    } catch (e) {
+      connectionStatus.value = MqttConnectionStatus.error;
+      statusMessage.value = 'MQTT connection error: $e';
+
+      try {
+        client?.disconnect();
+      } catch (_) {}
+    } finally {
+      _isConnecting = false;
+    }
+  }
+
+  Future<void> reconnect() async {
+    await connect();
+  }
+
+  Future<void> _cleanupOldClient() async {
+    try {
+      await _mqttSub?.cancel();
+    } catch (_) {}
+
+    _mqttSub = null;
+
+    try {
+      client?.disconnect();
+    } catch (_) {}
+
+    client = null;
+  }
+
+  void _onConnected() {
+    connectionStatus.value = MqttConnectionStatus.connected;
+    statusMessage.value =
+        'Connected to ${ConfigExtractor.host}:${ConfigExtractor.port}';
+  }
+
+  void _onDisconnected() {
+    connectionStatus.value = MqttConnectionStatus.disconnected;
+    statusMessage.value = 'Disconnected from broker';
+  }
+
+  void _listenToMessages(MqttServerClient activeClient) {
+    _mqttSub = activeClient.updates?.listen((events) {
+      if (events.isEmpty) return;
+
+      final rec = events.first.payload as MqttPublishMessage;
+      final payload = rec.payload.message;
+      final topic = events.first.topic;
+
+      try {
+        final packet = SensorDeserializer.parse(topic, payload);
+
+        if (packet == null) {
+          return;
+        }
+
+        packet.rawPayload = payload;
+        packet.topic = topic;
+
+        _controller.add(packet);
+      } catch (e) {
+        debugPrint('Decode error on topic $topic: $e');
+      }
+    });
+  }
+
+  void disconnect() {
+    _cleanupOldClient();
+  }
+
+  void dispose() {
+    _cleanupOldClient();
+    _controller.close();
+    connectionStatus.dispose();
+    statusMessage.dispose();
+  }
+}
+
+final mqttService = MQTTService();
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\sensor_deserializer.dart
+================================================================================
+// File: lib/ipc_layer/mqtt/sensor_deserializer.dart
+
+import '../../generated/sensor_data.pb.dart' as protos;
+import 'sensor_packet.dart';
+
+class SensorDeserializer {
+  static SensorPacket? parse(
+    String topic,
+    List<int> payload,
+  ) {
+    final parts = topic.split('/');
+
+    // Expected topics:
+    // Pacifier/0_1/imu
+    // Pacifier/0_1/airflow
+    // Pacifier/0_1/pat
+    // Pacifier/0_1/ppg
+    if (parts.length < 3) {
+      return null;
+    }
+
+    final group = parts[0];
+    final rawPacifier = parts[1];
+    final sensorType = parts[2];
+
+    const allowedSensorTypes = {
+      'imu',
+      'airflow',
+      'pat',
+      'ppg',
+    };
+
+    if (!allowedSensorTypes.contains(sensorType)) {
+      return null;
+    }
+
+    final topicParts = rawPacifier.split('_');
+
+    /*
+    * Topic examples:
+    *
+    * Pacifier/0_1/imu
+    * Pacifier/0_1/pat
+    * Pacifier/0_1/airflow
+    *
+    * For PPG:
+    * Pacifier/0_1/ppg
+    * Pacifier/0_2/ppg
+    * Pacifier/0_3/ppg
+    * Pacifier/0_4/ppg
+    *
+    * The second number is the PPG sensor ID, not a separate pacifier.
+    * Therefore all PPG sensors must stay under the same frontend pacifier.
+    */
+    final pacifierId = sensorType == 'ppg'
+        ? '1'
+        : rawPacifier.contains('_')
+            ? rawPacifier.split('_').last
+            : rawPacifier;
+
+    final ppgSensorId = rawPacifier.contains('_')
+        ? rawPacifier.split('_').last
+        : rawPacifier;
+
+    if (int.tryParse(pacifierId) == null) {
+      return null;
+    }
+
+    final values = <String, num>{};
+    int? espTimestampMs;
+
+    try {
+      switch (sensorType) {
+        case 'imu':
+          final msg = protos.IMUData.fromBuffer(payload);
+
+          espTimestampMs = msg.timestampMs.toInt();
+
+          values['temperature'] = msg.temperature;
+
+          values['acc_x'] = msg.acc.x;
+          values['acc_y'] = msg.acc.y;
+          values['acc_z'] = msg.acc.z;
+
+          values['gyro_x'] = msg.gyro.x;
+          values['gyro_y'] = msg.gyro.y;
+          values['gyro_z'] = msg.gyro.z;
+
+          break;
+
+        case 'airflow':
+          final msg = protos.AIRFLOWData.fromBuffer(payload);
+
+          espTimestampMs = msg.timestampMs.toInt();
+
+          values['temp_l'] = msg.tempL;
+          values['temp_r'] = msg.tempR;
+          values['temp_e'] = msg.tempE;
+
+          break;
+
+        case 'pat':
+          final msg = protos.PTData.fromBuffer(payload);
+
+          espTimestampMs = msg.timestampMs.toInt();
+
+          values['temperature_c'] = msg.temperature;
+          values['pressure_hpa'] = msg.pressure;
+
+          break;
+
+        case 'ppg':
+        final msg = protos.PPGData.fromBuffer(payload);
+
+        espTimestampMs = msg.timestampMs.toInt();
+
+        /*
+        * All four MAX30101 sensors belong to the same frontend pacifier.
+        *
+        * MQTT topics:
+        * Pacifier/0_1/ppg -> PPG sensor ID 1
+        * Pacifier/0_2/ppg -> PPG sensor ID 2
+        * Pacifier/0_3/ppg -> PPG sensor ID 3
+        * Pacifier/0_4/ppg -> PPG sensor ID 4
+        */
+        final ppgId = ppgSensorId;
+
+        values['ID${ppgId}_LED1'] = msg.led.led1;
+        values['ID${ppgId}_LED2'] = msg.led.led2;
+        values['ID${ppgId}_LED3'] = msg.led.led3;
+        values['ID${ppgId}_TEMP'] = msg.temperature.temperature;
+
+        print(
+          'PPG topic=$topic '
+          'frontendPacifierId=$pacifierId '
+          'ppgSensorId=$ppgSensorId '
+          'ID${ppgId}_LED1=${msg.led.led1} '
+          'ID${ppgId}_LED2=${msg.led.led2} '
+          'ID${ppgId}_LED3=${msg.led.led3} '
+          'ID${ppgId}_TEMP=${msg.temperature.temperature}',
+        );
+
+        break;
+      }
+    } catch (_) {
+      return null;
+    }
+
+    return SensorPacket(
+      pacifierId: pacifierId,
+      sensorType: sensorType,
+      sensorGroup: group,
+      values: values,
+      timestamp: DateTime.now(),
+      espTimestampMs: espTimestampMs,
+    );
+  }
+}
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\sensor_packet.dart
+================================================================================
+// File: lib/ipc_layer/mqtt/sensor_packet.dart
+
+class SensorPacket {
+  final String pacifierId;
+  final String sensorType;
+  final String sensorGroup;
+  final Map<String, num> values;
+
+  /// Time when packet was received by Flutter app
+  final DateTime timestamp;
+
+  /// ESP timestamp from protobuf timestamp_ms
+  final int? espTimestampMs;
+
+  /// Raw MQTT payload
+  List<int>? rawPayload;
+
+  /// Original MQTT topic
+  String? topic;
+
+  SensorPacket({
+    required this.pacifierId,
+    required this.sensorType,
+    required this.sensorGroup,
+    required this.values,
+    required this.timestamp,
+    this.espTimestampMs,
+  });
+
+  /// Timestamp used for graph x-axis and HDF5.
+  /// Prefer ESP time. Fallback to Flutter receive time.
+  double get graphTimeSeconds {
+    if (espTimestampMs != null) {
+      return espTimestampMs! / 1000.0;
+    }
+    return timestamp.millisecondsSinceEpoch / 1000.0;
+  }
+
+  /// Pretty ESP timestamp like 00:07:53.271
+  String get espTimeLabel {
+    if (espTimestampMs == null) {
+      return timestamp.toIso8601String();
+    }
+
+    final d = Duration(milliseconds: espTimestampMs!);
+
+    final hours = d.inHours.toString().padLeft(2, '0');
+    final minutes = (d.inMinutes % 60).toString().padLeft(2, '0');
+    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
+    final millis = (d.inMilliseconds % 1000).toString().padLeft(3, '0');
+
+    return '$hours:$minutes:$seconds.$millis';
+  }
+}
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\active_monitoring\activemonitoring.dart
 ================================================================================
 import 'dart:async';
 
@@ -1272,7 +1826,7 @@ void _handleSensorData(SensorPacket packet) {
 }
 
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/screens/active_monitoring/graphcreation.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\active_monitoring\graphcreation.dart
 ================================================================================
 // File: lib/screens/active_monitoring/graphcreation.dart
 
@@ -1573,162 +2127,7 @@ class GraphCreation {
 }
 
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/screens/settings/settings.dart
-================================================================================
-import 'dart:io';
-import 'package:flutter/material.dart';
-import 'configuration/configextractor.dart';
-
-class Settings extends StatefulWidget {
-  final String backend;
-  final bool isDark;
-  final ValueChanged<bool> onThemeChanged;
-
-  const Settings({
-    Key? key,
-    required this.backend,
-    required this.isDark,
-    required this.onThemeChanged,
-  }) : super(key: key);
-
-  @override
-  State<Settings> createState() => _SettingsState();
-}
-
-class _SettingsState extends State<Settings> {
-  late bool _notificationsEnabled;
-  late bool _isDark;
-
-  @override
-  void initState() {
-    super.initState();
-    _notificationsEnabled = true;
-    _isDark = widget.isDark;
-  }
-
-  void _showThemeDialog() {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Select Theme'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            RadioListTile<bool>(
-              title: const Text('Light'),
-              value: false,
-              groupValue: _isDark,
-              onChanged: (v) {
-                if (v != null) {
-                  setState(() => _isDark = v);
-                  widget.onThemeChanged(v);
-                  Navigator.of(context).pop();
-                }
-              },
-            ),
-            RadioListTile<bool>(
-              title: const Text('Dark'),
-              value: true,
-              groupValue: _isDark,
-              onChanged: (v) {
-                if (v != null) {
-                  setState(() => _isDark = v);
-                  widget.onThemeChanged(v);
-                  Navigator.of(context).pop();
-                }
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _checkBroker() async {
-    final host = ConfigExtractor.host;
-    final port = ConfigExtractor.port;
-    try {
-      final socket = await Socket.connect(host, port, timeout: const Duration(seconds: 2));
-      socket.destroy();
-      _showSnackBar('✅ Mosquitto broker is running on $host:$port');
-    } catch (_) {
-      _showSnackBar('❌ No Mosquitto broker found on $host:$port');
-    }
-  }
-
-  void _showSnackBar(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Settings — ${widget.backend}'),
-      ),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        children: [
-          ListTile(
-            leading: const Icon(Icons.person_outline),
-            title: const Text('Broker Check'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _checkBroker,
-          ),
-          const Divider(),
-
-          ListTile(
-            leading: const Icon(Icons.color_lens_outlined),
-            title: const Text('Theme'),
-            subtitle: Text(_isDark ? 'Dark' : 'Light'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: _showThemeDialog,
-          ),
-          const Divider(),
-
-          SwitchListTile.adaptive(
-            secondary: const Icon(Icons.notifications_outlined),
-            title: const Text('Enable Notifications'),
-            value: _notificationsEnabled,
-            onChanged: (v) => setState(() => _notificationsEnabled = v),
-          ),
-          const Divider(),
-        ],
-      ),
-    );
-  }
-}
-
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/screens/settings/configuration/configextractor.dart
-================================================================================
-// File: lib/screens/settings/configuration/configextractor.dart
-
-import 'package:flutter/services.dart' show rootBundle;
-import 'package:yaml/yaml.dart';
-
-/// Loads and exposes values from config.yml
-class ConfigExtractor {
-  static late final String host;
-  static late final int port;
-  /// Call once before runApp (or before you need the values).
-  static Future<void> init() async {
-    final yamlString = await rootBundle.loadString(
-      'lib/screens/settings/configuration/config.yml',
-    );
-    final doc = loadYaml(yamlString) as YamlMap;
-    host = doc['host'] as String;
-    port = doc['port'] as int;
-  }
-}
-
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/screens/campaign_monitoring/campaigncreation.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\campaign_monitoring\campaigncreation.dart
 ================================================================================
 // File: lib/screens/campaign_monitoring/campaigncreation.dart
 
@@ -2587,7 +2986,425 @@ void _onData(SensorPacket packet) {
 }
 
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/utils/session_paths.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\historic_data\historicdata.dart
+================================================================================
+import 'dart:io';
+import 'package:flutter/material.dart';
+
+class HistoricData extends StatefulWidget {
+  const HistoricData({Key? key}) : super(key: key);
+
+  @override
+  State<HistoricData> createState() => _HistoricDataState();
+}
+
+class _HistoricDataState extends State<HistoricData> {
+  final ScrollController _verticalCtrl = ScrollController();
+  final ScrollController _horizontalCtrl = ScrollController();
+
+  final List<Map<String, String>> _rows = [];
+  final List<String> _columns = [];
+  int _currentPage = 1;
+  final int _rowsPerPage = 20;
+  bool _hasPrompted = false;
+
+  final TextEditingController _pageInput = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _pageInput.text = '1';
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasPrompted) {
+      _hasPrompted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) => _promptAndLoad());
+    }
+  }
+
+  @override
+  void dispose() {
+    _verticalCtrl.dispose();
+    _horizontalCtrl.dispose();
+    _pageInput.dispose();
+    super.dispose();
+  }
+
+  Future<void> _promptAndLoad() async {
+    final controller = TextEditingController();
+    final path = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Open Historic Data File'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Full path to .txt file',
+            hintText: '/path/to/logs.txt',
+          ),
+        ),
+        actions: [
+          TextButton(
+            child: const Text('Cancel'),
+            onPressed: () => Navigator.of(ctx).pop(),
+          ),
+          ElevatedButton(
+            child: const Text('Open'),
+            onPressed: () => Navigator.of(ctx).pop(controller.text.trim()),
+          ),
+        ],
+      ),
+    );
+    if (path == null || path.isEmpty) return;
+
+    try {
+      final lines = await File(path).readAsLines();
+      _parseLines(lines);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to open file: $e')),
+      );
+    }
+  }
+
+  void _parseLines(List<String> lines) {
+    final cols = <String>{'timestamp', 'pacifier', 'type', 'group'};
+    final parsed = <Map<String, String>>[];
+
+    for (final line in lines) {
+      final tsMatch = RegExp(r'^\[(.*?)\]').firstMatch(line);
+      final ts = tsMatch?.group(1) ?? '';
+      final rest = line.replaceFirst(RegExp(r'^\[.*?\]\s*'), '');
+      final parts = rest.split(', data=');
+      final left = parts[0];
+      final dataPart = parts.length > 1
+          ? parts[1].replaceFirst(RegExp(r'^\{|\}$'), '')
+          : '';
+
+      final row = <String, String>{};
+      row['timestamp'] = ts;
+
+      for (final kv in left.split(', ')) {
+        final kvp = kv.split('=');
+        if (kvp.length == 2) row[kvp[0]] = kvp[1];
+      }
+
+      if (dataPart.isNotEmpty) {
+        for (final entry in dataPart.split(RegExp(r'\],\s*'))) {
+          final m = RegExp(r'([^:\s]+):\[(.*)\]').firstMatch(entry + ']');
+          if (m != null) {
+            final key = m.group(1)!;
+            var val = m.group(2)!;
+            // strip any trailing ']' or '}'
+            val = val.replaceAll(RegExp(r'[\]\}]+$'), '');
+            row[key] = val;
+            cols.add(key);
+          }
+        }
+      }
+      parsed.add(row);
+    }
+
+    final ordered = <String>[];
+    ordered.addAll(['timestamp', 'pacifier', 'type', 'group']);
+    ordered.addAll(cols
+        .where((c) => !['timestamp', 'pacifier', 'type', 'group'].contains(c))
+        .toList()
+      ..sort());
+
+    setState(() {
+      _rows
+        ..clear()
+        ..addAll(parsed);
+      _columns
+        ..clear()
+        ..addAll(ordered);
+      _currentPage = 1;
+      _pageInput.text = '1';
+    });
+  }
+
+  void _goToPage(int p) {
+    final totalPages = (_rows.length + _rowsPerPage - 1) ~/ _rowsPerPage;
+    final target = p.clamp(1, totalPages);
+    setState(() {
+      _currentPage = target;
+      _pageInput.text = '$target';
+      _verticalCtrl.jumpTo(0);
+      _horizontalCtrl.jumpTo(0);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final totalPages = (_rows.length + _rowsPerPage - 1) ~/ _rowsPerPage;
+    final start = (_currentPage - 1) * _rowsPerPage;
+    final pageRows = _rows.skip(start).take(_rowsPerPage).toList();
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Historic Data')),
+      body: _rows.isEmpty
+          ? const Center(child: Text('No data loaded'))
+          : Column(
+        children: [
+          // ── Pagination Controls ──────────────────────────
+          Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: _currentPage > 1
+                      ? () => _goToPage(_currentPage - 1)
+                      : null,
+                ),
+                SizedBox(
+                  width: 60,
+                  child: TextField(
+                    controller: _pageInput,
+                    textAlign: TextAlign.center,
+                    decoration: const InputDecoration(
+                      border: OutlineInputBorder(),
+                    ),
+                    keyboardType: TextInputType.number,
+                    onSubmitted: (v) {
+                      final p = int.tryParse(v) ?? _currentPage;
+                      _goToPage(p);
+                    },
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text('/ $totalPages'),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: _currentPage < totalPages
+                      ? () => _goToPage(_currentPage + 1)
+                      : null,
+                ),
+              ],
+            ),
+          ),
+
+          // ── Data Table with Dual Scrollbars ──────────────
+          Expanded(
+            child: Scrollbar(
+              controller: _verticalCtrl,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                controller: _verticalCtrl,
+                child: Scrollbar(
+                  controller: _horizontalCtrl,
+                  thumbVisibility: true,
+                  notificationPredicate: (n) =>
+                  n.metrics.axis == Axis.horizontal,
+                  child: SingleChildScrollView(
+                    controller: _horizontalCtrl,
+                    scrollDirection: Axis.horizontal,
+                    child: DataTable(
+                      headingRowColor: MaterialStateProperty.all(
+                          Colors.grey.shade800),
+                      columns: _columns
+                          .map((c) => DataColumn(
+                        label: Text(
+                          c[0].toUpperCase() + c.substring(1),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold),
+                        ),
+                      ))
+                          .toList(),
+                      rows: pageRows.map((row) {
+                        return DataRow(
+                          cells: _columns.map((col) {
+                            return DataCell(
+                              ConstrainedBox(
+                                constraints:
+                                const BoxConstraints(maxWidth: 150),
+                                child: Text(row[col] ?? ''),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\settings\settings.dart
+================================================================================
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'configuration/configextractor.dart';
+
+class Settings extends StatefulWidget {
+  final String backend;
+  final bool isDark;
+  final ValueChanged<bool> onThemeChanged;
+
+  const Settings({
+    Key? key,
+    required this.backend,
+    required this.isDark,
+    required this.onThemeChanged,
+  }) : super(key: key);
+
+  @override
+  State<Settings> createState() => _SettingsState();
+}
+
+class _SettingsState extends State<Settings> {
+  late bool _notificationsEnabled;
+  late bool _isDark;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationsEnabled = true;
+    _isDark = widget.isDark;
+  }
+
+  void _showThemeDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Select Theme'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            RadioListTile<bool>(
+              title: const Text('Light'),
+              value: false,
+              groupValue: _isDark,
+              onChanged: (v) {
+                if (v != null) {
+                  setState(() => _isDark = v);
+                  widget.onThemeChanged(v);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+            RadioListTile<bool>(
+              title: const Text('Dark'),
+              value: true,
+              groupValue: _isDark,
+              onChanged: (v) {
+                if (v != null) {
+                  setState(() => _isDark = v);
+                  widget.onThemeChanged(v);
+                  Navigator.of(context).pop();
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _checkBroker() async {
+    final host = ConfigExtractor.host;
+    final port = ConfigExtractor.port;
+    try {
+      final socket = await Socket.connect(host, port, timeout: const Duration(seconds: 2));
+      socket.destroy();
+      _showSnackBar('✅ Mosquitto broker is running on $host:$port');
+    } catch (_) {
+      _showSnackBar('❌ No Mosquitto broker found on $host:$port');
+    }
+  }
+
+  void _showSnackBar(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), duration: const Duration(seconds: 3)),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Settings — ${widget.backend}'),
+      ),
+      body: ListView(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        children: [
+          ListTile(
+            leading: const Icon(Icons.person_outline),
+            title: const Text('Broker Check'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _checkBroker,
+          ),
+          const Divider(),
+
+          ListTile(
+            leading: const Icon(Icons.color_lens_outlined),
+            title: const Text('Theme'),
+            subtitle: Text(_isDark ? 'Dark' : 'Light'),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: _showThemeDialog,
+          ),
+          const Divider(),
+
+          SwitchListTile.adaptive(
+            secondary: const Icon(Icons.notifications_outlined),
+            title: const Text('Enable Notifications'),
+            value: _notificationsEnabled,
+            onChanged: (v) => setState(() => _notificationsEnabled = v),
+          ),
+          const Divider(),
+        ],
+      ),
+    );
+  }
+}
+
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\settings\configuration\configextractor.dart
+================================================================================
+// File: lib/screens/settings/configuration/configextractor.dart
+
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:yaml/yaml.dart';
+
+/// Loads and exposes values from config.yml
+class ConfigExtractor {
+  /// The frontend always talks to the broker running on this same machine,
+  /// so the host is fixed to localhost and never depends on the changing
+  /// ethernet IP. Only the ESP32 reaches the broker over the network
+  /// (via broker.local / mDNS).
+  static const String host = '127.0.0.1';
+
+  static late final int port;
+
+  /// Call once before runApp (or before you need the values).
+  static Future<void> init() async {
+    final yamlString = await rootBundle.loadString(
+      'lib/screens/settings/configuration/config.yml',
+    );
+    final doc = loadYaml(yamlString) as YamlMap;
+    port = doc['port'] as int;
+  }
+}
+
+================================================================================
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\utils\session_paths.dart
 ================================================================================
 import 'dart:io';
 import 'package:path/path.dart' as p;
@@ -2616,633 +3433,37 @@ class SessionPaths {
 }
 
 ================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/mqtt/sensor_deserializer.dart
+FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\test\widget_test.dart
 ================================================================================
-// File: lib/ipc_layer/mqtt/sensor_deserializer.dart
+// This is a basic Flutter widget test.
+//
+// To perform an interaction with a widget in your test, use the WidgetTester
+// utility in the flutter_test package. For example, you can send tap and scroll
+// gestures. You can also use WidgetTester to find child widgets in the widget
+// tree, read text, and verify that the values of widget properties are correct.
 
-import '../../generated/sensor_data.pb.dart' as protos;
-import 'sensor_packet.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
 
-class SensorDeserializer {
-  static SensorPacket? parse(
-    String topic,
-    List<int> payload,
-  ) {
-    final parts = topic.split('/');
+import 'package:smartpacifier_app/main.dart';
 
-    // Expected topics:
-    // Pacifier/0_1/imu
-    // Pacifier/0_1/airflow
-    // Pacifier/0_1/pat
-    // Pacifier/0_1/ppg
-    if (parts.length < 3) {
-      return null;
-    }
+void main() {
+  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
+    // Build our app and trigger a frame.
+    await tester.pumpWidget(const MyApp());
 
-    final group = parts[0];
-    final rawPacifier = parts[1];
-    final sensorType = parts[2];
+    // Verify that our counter starts at 0.
+    expect(find.text('0'), findsOneWidget);
+    expect(find.text('1'), findsNothing);
 
-    const allowedSensorTypes = {
-      'imu',
-      'airflow',
-      'pat',
-      'ppg',
-    };
+    // Tap the '+' icon and trigger a frame.
+    await tester.tap(find.byIcon(Icons.add));
+    await tester.pump();
 
-    if (!allowedSensorTypes.contains(sensorType)) {
-      return null;
-    }
-
-    final topicParts = rawPacifier.split('_');
-
-    /*
-    * Topic examples:
-    *
-    * Pacifier/0_1/imu
-    * Pacifier/0_1/pat
-    * Pacifier/0_1/airflow
-    *
-    * For PPG:
-    * Pacifier/0_1/ppg
-    * Pacifier/0_2/ppg
-    * Pacifier/0_3/ppg
-    * Pacifier/0_4/ppg
-    *
-    * The second number is the PPG sensor ID, not a separate pacifier.
-    * Therefore all PPG sensors must stay under the same frontend pacifier.
-    */
-    final pacifierId = sensorType == 'ppg'
-        ? '1'
-        : rawPacifier.contains('_')
-            ? rawPacifier.split('_').last
-            : rawPacifier;
-
-    final ppgSensorId = rawPacifier.contains('_')
-        ? rawPacifier.split('_').last
-        : rawPacifier;
-
-    if (int.tryParse(pacifierId) == null) {
-      return null;
-    }
-
-    final values = <String, num>{};
-    int? espTimestampMs;
-
-    try {
-      switch (sensorType) {
-        case 'imu':
-          final msg = protos.IMUData.fromBuffer(payload);
-
-          espTimestampMs = msg.timestampMs.toInt();
-
-          values['temperature'] = msg.temperature;
-
-          values['acc_x'] = msg.acc.x;
-          values['acc_y'] = msg.acc.y;
-          values['acc_z'] = msg.acc.z;
-
-          values['gyro_x'] = msg.gyro.x;
-          values['gyro_y'] = msg.gyro.y;
-          values['gyro_z'] = msg.gyro.z;
-
-          break;
-
-        case 'airflow':
-          final msg = protos.AIRFLOWData.fromBuffer(payload);
-
-          espTimestampMs = msg.timestampMs.toInt();
-
-          values['temp_l'] = msg.tempL;
-          values['temp_r'] = msg.tempR;
-          values['temp_e'] = msg.tempE;
-
-          break;
-
-        case 'pat':
-          final msg = protos.PTData.fromBuffer(payload);
-
-          espTimestampMs = msg.timestampMs.toInt();
-
-          values['temperature_c'] = msg.temperature;
-          values['pressure_hpa'] = msg.pressure;
-
-          break;
-
-        case 'ppg':
-        final msg = protos.PPGData.fromBuffer(payload);
-
-        espTimestampMs = msg.timestampMs.toInt();
-
-        /*
-        * All four MAX30101 sensors belong to the same frontend pacifier.
-        *
-        * MQTT topics:
-        * Pacifier/0_1/ppg -> PPG sensor ID 1
-        * Pacifier/0_2/ppg -> PPG sensor ID 2
-        * Pacifier/0_3/ppg -> PPG sensor ID 3
-        * Pacifier/0_4/ppg -> PPG sensor ID 4
-        */
-        final ppgId = ppgSensorId;
-
-        values['ID${ppgId}_LED1'] = msg.led.led1;
-        values['ID${ppgId}_LED2'] = msg.led.led2;
-        values['ID${ppgId}_LED3'] = msg.led.led3;
-        values['ID${ppgId}_TEMP'] = msg.temperature.temperature;
-
-        print(
-          'PPG topic=$topic '
-          'frontendPacifierId=$pacifierId '
-          'ppgSensorId=$ppgSensorId '
-          'ID${ppgId}_LED1=${msg.led.led1} '
-          'ID${ppgId}_LED2=${msg.led.led2} '
-          'ID${ppgId}_LED3=${msg.led.led3} '
-          'ID${ppgId}_TEMP=${msg.temperature.temperature}',
-        );
-
-        break;
-      }
-    } catch (_) {
-      return null;
-    }
-
-    return SensorPacket(
-      pacifierId: pacifierId,
-      sensorType: sensorType,
-      sensorGroup: group,
-      values: values,
-      timestamp: DateTime.now(),
-      espTimestampMs: espTimestampMs,
-    );
-  }
-}
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/mqtt/sensor_packet.dart
-================================================================================
-// File: lib/ipc_layer/mqtt/sensor_packet.dart
-
-class SensorPacket {
-  final String pacifierId;
-  final String sensorType;
-  final String sensorGroup;
-  final Map<String, num> values;
-
-  /// Time when packet was received by Flutter app
-  final DateTime timestamp;
-
-  /// ESP timestamp from protobuf timestamp_ms
-  final int? espTimestampMs;
-
-  /// Raw MQTT payload
-  List<int>? rawPayload;
-
-  /// Original MQTT topic
-  String? topic;
-
-  SensorPacket({
-    required this.pacifierId,
-    required this.sensorType,
-    required this.sensorGroup,
-    required this.values,
-    required this.timestamp,
-    this.espTimestampMs,
+    // Verify that our counter has incremented.
+    expect(find.text('0'), findsNothing);
+    expect(find.text('1'), findsOneWidget);
   });
-
-  /// Timestamp used for graph x-axis and HDF5.
-  /// Prefer ESP time. Fallback to Flutter receive time.
-  double get graphTimeSeconds {
-    if (espTimestampMs != null) {
-      return espTimestampMs! / 1000.0;
-    }
-    return timestamp.millisecondsSinceEpoch / 1000.0;
-  }
-
-  /// Pretty ESP timestamp like 00:07:53.271
-  String get espTimeLabel {
-    if (espTimestampMs == null) {
-      return timestamp.toIso8601String();
-    }
-
-    final d = Duration(milliseconds: espTimestampMs!);
-
-    final hours = d.inHours.toString().padLeft(2, '0');
-    final minutes = (d.inMinutes % 60).toString().padLeft(2, '0');
-    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
-    final millis = (d.inMilliseconds % 1000).toString().padLeft(3, '0');
-
-    return '$hours:$minutes:$seconds.$millis';
-  }
 }
 
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/mqtt/mqtt_service.dart
-================================================================================
-import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:mqtt_client/mqtt_client.dart';
-import 'package:mqtt_client/mqtt_server_client.dart';
-
-import '../../screens/settings/configuration/configextractor.dart';
-import 'sensor_packet.dart';
-import 'sensor_deserializer.dart';
-
-enum MqttConnectionStatus {
-  disconnected,
-  connecting,
-  connected,
-  error,
-}
-
-class MQTTService {
-  MqttServerClient? client;
-
-  StreamSubscription? _mqttSub;
-
-  final StreamController<SensorPacket> _controller =
-      StreamController<SensorPacket>.broadcast();
-
-  final ValueNotifier<MqttConnectionStatus> connectionStatus =
-      ValueNotifier<MqttConnectionStatus>(MqttConnectionStatus.disconnected);
-
-  final ValueNotifier<String> statusMessage =
-      ValueNotifier<String>('Disconnected');
-
-  Stream<SensorPacket> get stream => _controller.stream;
-
-  bool _isConnecting = false;
-
-  Future<void> connect() async {
-    if (_isConnecting) return;
-    _isConnecting = true;
-
-    try {
-      connectionStatus.value = MqttConnectionStatus.connecting;
-      statusMessage.value =
-          'Connecting to ${ConfigExtractor.host}:${ConfigExtractor.port}...';
-
-      await _cleanupOldClient();
-
-      final newClient = MqttServerClient(
-        ConfigExtractor.host,
-        'flutter_client_${DateTime.now().millisecondsSinceEpoch}',
-      );
-
-      newClient.port = ConfigExtractor.port;
-      newClient.keepAlivePeriod = 20;
-      newClient.logging(on: false);
-      newClient.autoReconnect = true;
-      newClient.resubscribeOnAutoReconnect = true;
-
-      newClient.onConnected = _onConnected;
-      newClient.onDisconnected = _onDisconnected;
-
-      newClient.onSubscribed = (topic) {
-        statusMessage.value = 'Subscribed to $topic';
-      };
-
-      newClient.onAutoReconnect = () {
-        connectionStatus.value = MqttConnectionStatus.connecting;
-        statusMessage.value = 'Reconnecting...';
-      };
-
-      newClient.onAutoReconnected = () {
-        connectionStatus.value = MqttConnectionStatus.connected;
-        statusMessage.value = 'Reconnected to Pacifier/#';
-
-        try {
-          newClient.subscribe('Pacifier/#', MqttQos.atLeastOnce);
-        } catch (_) {}
-      };
-
-      final connMess = MqttConnectMessage()
-          .withClientIdentifier(
-            'flutter_client_${DateTime.now().millisecondsSinceEpoch}',
-          )
-          .startClean();
-
-      newClient.connectionMessage = connMess;
-
-      client = newClient;
-
-      await newClient.connect();
-
-      if (newClient.connectionStatus?.state != MqttConnectionState.connected) {
-        connectionStatus.value = MqttConnectionStatus.error;
-        statusMessage.value =
-            'MQTT connection failed: ${newClient.connectionStatus?.state}';
-        return;
-      }
-
-      _listenToMessages(newClient);
-
-      newClient.subscribe('Pacifier/#', MqttQos.atLeastOnce);
-    } catch (e) {
-      connectionStatus.value = MqttConnectionStatus.error;
-      statusMessage.value = 'MQTT connection error: $e';
-
-      try {
-        client?.disconnect();
-      } catch (_) {}
-    } finally {
-      _isConnecting = false;
-    }
-  }
-
-  Future<void> reconnect() async {
-    await connect();
-  }
-
-  Future<void> _cleanupOldClient() async {
-    try {
-      await _mqttSub?.cancel();
-    } catch (_) {}
-
-    _mqttSub = null;
-
-    try {
-      client?.disconnect();
-    } catch (_) {}
-
-    client = null;
-  }
-
-  void _onConnected() {
-    connectionStatus.value = MqttConnectionStatus.connected;
-    statusMessage.value =
-        'Connected to ${ConfigExtractor.host}:${ConfigExtractor.port}';
-  }
-
-  void _onDisconnected() {
-    connectionStatus.value = MqttConnectionStatus.disconnected;
-    statusMessage.value = 'Disconnected from broker';
-  }
-
-  void _listenToMessages(MqttServerClient activeClient) {
-    _mqttSub = activeClient.updates?.listen((events) {
-      if (events.isEmpty) return;
-
-      final rec = events.first.payload as MqttPublishMessage;
-      final payload = rec.payload.message;
-      final topic = events.first.topic;
-
-      try {
-        final packet = SensorDeserializer.parse(topic, payload);
-
-        if (packet == null) {
-          return;
-        }
-
-        packet.rawPayload = payload;
-        packet.topic = topic;
-
-        _controller.add(packet);
-      } catch (e) {
-        debugPrint('Decode error on topic $topic: $e');
-      }
-    });
-  }
-
-  void disconnect() {
-    _cleanupOldClient();
-  }
-
-  void dispose() {
-    _cleanupOldClient();
-    _controller.close();
-    connectionStatus.dispose();
-    statusMessage.dispose();
-  }
-}
-
-final mqttService = MQTTService();
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/grpc/deserialization.dart
-================================================================================
-import '../../generated/sensor_data.pb.dart' as protos;
-import 'sensor_packet.dart';
-
-class SensorDeserializer {
-  static SensorPacket parse(
-    String topic,
-    List<int> payload,
-  ) {
-    final parts = topic.split('/');
-
-    final pacifierId = parts.length > 1 ? parts[1] : "0";
-    final sensorType = parts.length > 2 ? parts[2] : "unknown";
-    final group = parts.length > 0 ? parts[0] : "backend";
-
-    final values = <String, num>{};
-
-    switch (sensorType) {
-      /// IMU SENSOR
-      case "imu":
-        final msg = protos.IMUData.fromBuffer(payload);
-
-        values["temperature"] = msg.temperature;
-
-        values["acc_x"] = msg.acc.x;
-        values["acc_y"] = msg.acc.y;
-        values["acc_z"] = msg.acc.z;
-
-        values["gyro_x"] = msg.gyro.x;
-        values["gyro_y"] = msg.gyro.y;
-        values["gyro_z"] = msg.gyro.z;
-
-        break;
-
-      /// AIRFLOW SENSOR
-      case "airflow":
-        final msg = protos.AIRFLOWData.fromBuffer(payload);
-
-        values["temp_l"] = msg.tempL;
-        values["temp_r"] = msg.tempR;
-        values["temp_e"] = msg.tempE;
-
-        break;
-
-      /// PRESSURE + TEMPERATURE SENSOR (MS8607)
-      case "pat":
-        final msg = protos.PTData.fromBuffer(payload);
-
-        values["temperature"] = msg.temperature;
-        values["pressure"] = msg.pressure;
-
-        break;
-
-      /// PPG SENSOR
-      case "ppg":
-        final msg = protos.PPGData.fromBuffer(payload);
-
-        values["led_1"] = msg.led1;
-        values["led_2"] = msg.led2;
-        values["led_3"] = msg.led3;
-        values["temperature"] = msg.temperature;
-
-        break;
-
-      default:
-        break;
-    }
-
-    return SensorPacket(
-      pacifierId: pacifierId,
-      sensorType: sensorType,
-      sensorGroup: group,
-      values: values,
-      timestamp: DateTime.now(),
-    );
-  }
-}
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/grpc/server.dart
-================================================================================
-// File: ipc_layer/grpc/server.dart
-
-import 'dart:async';
-import 'package:flutter/foundation.dart';
-import 'package:grpc/grpc.dart';
-import 'package:smartpacifier_app/generated/myservice.pbgrpc.dart';
-import 'package:smartpacifier_app/generated/google/protobuf/empty.pb.dart';
-
-class MyServiceImpl extends MyServiceBase {
-  /// Broadcast controller in synchronous mode: delivers each add() immediately.
-  final _controller = StreamController<PayloadMessage>.broadcast(sync: true);
-
-  @override
-  Future<Empty> publishSensorData(
-      ServiceCall call,
-      Stream<PayloadMessage> request,
-      ) async {
-    // Extract backend identifier from metadata
-    final backendName = call.clientMetadata?['backend-name'] ?? 'unknown_backend';
-    debugPrint('publishSensorData() started for $backendName');
-
-    await for (final msg in request) {
-      // Tag the payload with its source
-      msg.sensorData.sensorGroup = backendName;
-
-      // Log the deserialized payload with actual values
-      final timestamp = DateTime.now().toIso8601String();
-      debugPrint(
-        '[$timestamp] '
-            '[$backendName] '
-            'pacifier=${msg.sensorData.pacifierId}, '
-            'type=${msg.sensorData.sensorType}, '
-            'group=${msg.sensorData.sensorGroup}, '
-            'data=${msg.sensorData.dataMap}',
-      );
-
-      // Forward immediately to Flutter listeners
-      _controller.add(msg);
-    }
-
-    debugPrint('publishSensorData() completed for $backendName');
-    return Empty();
-  }
-
-  @override
-  Stream<PayloadMessage> get onSensorData => _controller.stream;
-}
-
-/// Shared instance for Connector to import
-final myService = MyServiceImpl();
-
-/// Starts the gRPC server on [port] (default: 50051)
-Future<void> startGrpcServer({int port = 50051}) async {
-  final server = await Server.create(
-    services: [myService],
-    codecRegistry: CodecRegistry(codecs: [GzipCodec(), IdentityCodec()]),
-  );
-  await server.serve(port: port);
-  debugPrint('gRPC server listening on port \$port');
-}
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/grpc/google/protobuf/empty.pbjson.dart
-================================================================================
-(generated/protobuf file skipped) empty.pbjson.dart
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/grpc/google/protobuf/wrappers.pbenum.dart
-================================================================================
-(generated/protobuf file skipped) wrappers.pbenum.dart
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/grpc/google/protobuf/wrappers.pb.dart
-================================================================================
-(generated/protobuf file skipped) wrappers.pb.dart
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/grpc/google/protobuf/empty.pbenum.dart
-================================================================================
-(generated/protobuf file skipped) empty.pbenum.dart
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/grpc/google/protobuf/empty.pb.dart
-================================================================================
-(generated/protobuf file skipped) empty.pb.dart
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/ipc_layer/grpc/google/protobuf/wrappers.pbjson.dart
-================================================================================
-(generated/protobuf file skipped) wrappers.pbjson.dart
-
-================================================================================
-FILE: /home/keti-hazbiu/git-hub/SmartPacifier-Tool/src/smartpacifier_app/lib/client_layer/connector.dart
-================================================================================
-import 'dart:async';
-
-import '../ipc_layer/mqtt/mqtt_service.dart';
-import '../ipc_layer/mqtt/sensor_packet.dart';
-
-class Connector {
-
-  Connector._internal() {
-    _initDetection();
-  }
-
-  static final Connector _instance = Connector._internal();
-
-  factory Connector() => _instance;
-
-  final Set<String> _clients = {};
-
-  final _ctrl = StreamController<List<String>>.broadcast();
-
-  Stream<List<String>> get clientsStream => _ctrl.stream;
-
-  List<String> get clients => List.unmodifiable(_clients);
-
-  void _initDetection() {
-
-    mqttService.stream.listen((packet) {
-
-      final backend = packet.sensorGroup;
-
-      if (backend.isNotEmpty) {
-        addClient(backend);
-      }
-    });
-  }
-
-  void addClient(String name) {
-
-    if (_clients.add(name)) {
-
-      _ctrl.add(_clients.toList());
-    }
-  }
-
-  Stream<SensorPacket> dataStreamFor(String clientId) {
-
-    return mqttService.stream.where((sd) {
-
-      return sd.sensorGroup == clientId;
-    });
-  }
-}
 

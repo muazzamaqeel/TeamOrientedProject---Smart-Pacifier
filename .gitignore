@@ -7,3 +7,5 @@ src/sp_backend/backend.log
 # grpc externals
 src/sp_backend/src/external_libs/grpc/
 
+/src/smartpacifier_app/lib/generated
+/src/smartpacifier_app/lib/generated
