@@ -2,7 +2,7 @@ import os
 
 # Root directory to scan
 ROOT_DIR = os.path.expanduser(
-    "C:\\Programming\\GitHub\\SmartPacifier-Tool\\src\\smartpacifier_app\\"
+    "C:\Programming\SmartPacifier-Tool\src\smartpacifier_app"
 )
 
 # Output file next to this script

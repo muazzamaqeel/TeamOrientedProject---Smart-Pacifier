@@ -1,5 +1,5 @@
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\fl_chart_patch.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\fl_chart_patch.dart
 ================================================================================
 import 'package:flutter/widgets.dart';
 
@@ -12,7 +12,7 @@ extension MediaQueryPatch on MediaQuery {
 
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\main.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\main.dart
 ================================================================================
 import 'package:flutter/material.dart';
 
@@ -69,7 +69,7 @@ class _MyAppState extends State<MyApp> {
 
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\client_layer\connector.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\client_layer\connector.dart
 ================================================================================
 import 'dart:async';
 
@@ -124,7 +124,7 @@ class Connector {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sidebar\app_shell.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sidebar\app_shell.dart
 ================================================================================
 import 'package:flutter/material.dart';
 import 'package:smartpacifier_app/client_layer/connector.dart';
@@ -273,7 +273,7 @@ class _AppShellState extends State<AppShell> {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sidebar\sidebar.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\sidebar\sidebar.dart
 ================================================================================
 import 'package:flutter/material.dart';
 
@@ -440,7 +440,7 @@ class Sidebar extends StatelessWidget {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\components\theme\darktheme.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\theme\darktheme.dart
 ================================================================================
 import 'package:flutter/material.dart';
 
@@ -499,7 +499,7 @@ final ThemeData darkTheme = ThemeData(
 );
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\components\theme\lighttheme.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\components\theme\lighttheme.dart
 ================================================================================
 import 'package:flutter/material.dart';
 
@@ -523,7 +523,7 @@ final ThemeData lightTheme = ThemeData(
 
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\broker\local_broker_manager.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\broker\local_broker_manager.dart
 ================================================================================
 import 'dart:async';
 import 'dart:io';
@@ -622,7 +622,7 @@ class LocalBrokerManager {
 final localBrokerManager = LocalBrokerManager();
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\deserialization.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\deserialization.dart
 ================================================================================
 import '../../generated/sensor_data.pb.dart' as protos;
 import 'sensor_packet.dart';
@@ -702,7 +702,7 @@ class SensorDeserializer {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\server.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\server.dart
 ================================================================================
 // File: ipc_layer/grpc/server.dart
 
@@ -766,37 +766,37 @@ Future<void> startGrpcServer({int port = 50051}) async {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pb.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pb.dart
 ================================================================================
 (generated file – content skipped) empty.pb.dart
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pbenum.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pbenum.dart
 ================================================================================
 (generated file – content skipped) empty.pbenum.dart
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pbjson.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\empty.pbjson.dart
 ================================================================================
 (generated file – content skipped) empty.pbjson.dart
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pb.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pb.dart
 ================================================================================
 (generated file – content skipped) wrappers.pb.dart
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pbenum.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pbenum.dart
 ================================================================================
 (generated file – content skipped) wrappers.pbenum.dart
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pbjson.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\grpc\google\protobuf\wrappers.pbjson.dart
 ================================================================================
 (generated file – content skipped) wrappers.pbjson.dart
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\local_mosquitto_broker.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\local_mosquitto_broker.dart
 ================================================================================
 import 'dart:io';
 
@@ -905,7 +905,7 @@ class LocalMosquittoBroker {
 final localMosquittoBroker = LocalMosquittoBroker();
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\mqtt_service.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\mqtt_service.dart
 ================================================================================
 import 'dart:async';
 import 'package:flutter/foundation.dart';
@@ -1087,7 +1087,7 @@ class MQTTService {
 final mqttService = MQTTService();
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\sensor_deserializer.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\sensor_deserializer.dart
 ================================================================================
 // File: lib/ipc_layer/mqtt/sensor_deserializer.dart
 
@@ -1095,6 +1095,9 @@ import '../../generated/sensor_data.pb.dart' as protos;
 import 'sensor_packet.dart';
 
 class SensorDeserializer {
+  static int? _validTimestampMs(int value) {
+    return value > 0 ? value : null;
+  }
   static SensorPacket? parse(
     String topic,
     List<int> payload,
@@ -1165,7 +1168,7 @@ class SensorDeserializer {
         case 'imu':
           final msg = protos.IMUData.fromBuffer(payload);
 
-          espTimestampMs = msg.timestampMs.toInt();
+          espTimestampMs = _validTimestampMs(msg.timestampMs.toInt());
 
           values['temperature'] = msg.temperature;
 
@@ -1182,8 +1185,7 @@ class SensorDeserializer {
         case 'airflow':
           final msg = protos.AIRFLOWData.fromBuffer(payload);
 
-          espTimestampMs = msg.timestampMs.toInt();
-
+          espTimestampMs = _validTimestampMs(msg.timestampMs.toInt());
           values['temp_l'] = msg.tempL;
           values['temp_r'] = msg.tempR;
           values['temp_e'] = msg.tempE;
@@ -1193,7 +1195,7 @@ class SensorDeserializer {
         case 'pat':
           final msg = protos.PTData.fromBuffer(payload);
 
-          espTimestampMs = msg.timestampMs.toInt();
+          espTimestampMs = _validTimestampMs(msg.timestampMs.toInt());
 
           values['temperature_c'] = msg.temperature;
           values['pressure_hpa'] = msg.pressure;
@@ -1203,7 +1205,7 @@ class SensorDeserializer {
         case 'ppg':
         final msg = protos.PPGData.fromBuffer(payload);
 
-        espTimestampMs = msg.timestampMs.toInt();
+        espTimestampMs = _validTimestampMs(msg.timestampMs.toInt());
 
         /*
         * All four MAX30101 sensors belong to the same frontend pacifier.
@@ -1249,7 +1251,7 @@ class SensorDeserializer {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\sensor_packet.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\ipc_layer\mqtt\sensor_packet.dart
 ================================================================================
 // File: lib/ipc_layer/mqtt/sensor_packet.dart
 
@@ -1262,7 +1264,8 @@ class SensorPacket {
   /// Time when packet was received by Flutter app
   final DateTime timestamp;
 
-  /// ESP timestamp from protobuf timestamp_ms
+  /// ESP timestamp from protobuf timestamp_ms.
+  /// If ESP sends 0 or null, we ignore it and use app-relative time instead.
   final int? espTimestampMs;
 
   /// Raw MQTT payload
@@ -1270,6 +1273,8 @@ class SensorPacket {
 
   /// Original MQTT topic
   String? topic;
+
+  static final DateTime _graphStartTime = DateTime.now();
 
   SensorPacket({
     required this.pacifierId,
@@ -1280,22 +1285,37 @@ class SensorPacket {
     this.espTimestampMs,
   });
 
-  /// Timestamp used for graph x-axis and HDF5.
-  /// Prefer ESP time. Fallback to Flutter receive time.
-  double get graphTimeSeconds {
-    if (espTimestampMs != null) {
-      return espTimestampMs! / 1000.0;
-    }
-    return timestamp.millisecondsSinceEpoch / 1000.0;
+  bool get hasValidEspTimestamp {
+    return espTimestampMs != null && espTimestampMs! > 0;
   }
 
-  /// Pretty ESP timestamp like 00:07:53.271
-  String get espTimeLabel {
-    if (espTimestampMs == null) {
-      return timestamp.toIso8601String();
+  /// Timestamp used for graph x-axis and HDF5.
+  ///
+  /// Important:
+  /// ESP currently sends timestamp_ms as 0, so using it directly breaks
+  /// the graph and puts all points at x = 0.
+  ///
+  /// Therefore:
+  /// - use ESP timestamp only if it is > 0
+  /// - otherwise use app-relative receive time
+  double get graphTimeSeconds {
+    if (hasValidEspTimestamp) {
+      return espTimestampMs! / 1000.0;
     }
 
-    final d = Duration(milliseconds: espTimestampMs!);
+    return timestamp.difference(_graphStartTime).inMilliseconds / 1000.0;
+  }
+
+  /// Pretty timestamp label.
+  /// Uses ESP time if valid, otherwise app-relative time.
+  String get espTimeLabel {
+    final Duration d;
+
+    if (hasValidEspTimestamp) {
+      d = Duration(milliseconds: espTimestampMs!);
+    } else {
+      d = timestamp.difference(_graphStartTime);
+    }
 
     final hours = d.inHours.toString().padLeft(2, '0');
     final minutes = (d.inMinutes % 60).toString().padLeft(2, '0');
@@ -1307,7 +1327,7 @@ class SensorPacket {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\active_monitoring\activemonitoring.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\active_monitoring\activemonitoring.dart
 ================================================================================
 import 'dart:async';
 
@@ -1826,7 +1846,7 @@ void _handleSensorData(SensorPacket packet) {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\active_monitoring\graphcreation.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\active_monitoring\graphcreation.dart
 ================================================================================
 // File: lib/screens/active_monitoring/graphcreation.dart
 
@@ -2127,7 +2147,7 @@ class GraphCreation {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\campaign_monitoring\campaigncreation.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\campaign_monitoring\campaigncreation.dart
 ================================================================================
 // File: lib/screens/campaign_monitoring/campaigncreation.dart
 
@@ -2986,7 +3006,7 @@ void _onData(SensorPacket packet) {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\historic_data\historicdata.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\historic_data\historicdata.dart
 ================================================================================
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -3245,7 +3265,7 @@ class _HistoricDataState extends State<HistoricData> {
 
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\settings\settings.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\settings\settings.dart
 ================================================================================
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -3376,7 +3396,7 @@ class _SettingsState extends State<Settings> {
 
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\settings\configuration\configextractor.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\screens\settings\configuration\configextractor.dart
 ================================================================================
 // File: lib/screens/settings/configuration/configextractor.dart
 
@@ -3404,7 +3424,7 @@ class ConfigExtractor {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\lib\utils\session_paths.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\lib\utils\session_paths.dart
 ================================================================================
 import 'dart:io';
 import 'package:path/path.dart' as p;
@@ -3433,7 +3453,7 @@ class SessionPaths {
 }
 
 ================================================================================
-FILE: C:\Programming\GitHub\SmartPacifier-Tool\src\smartpacifier_app\test\widget_test.dart
+FILE: C:\Programming\SmartPacifier-Tool\src\smartpacifier_app\test\widget_test.dart
 ================================================================================
 // This is a basic Flutter widget test.
 //

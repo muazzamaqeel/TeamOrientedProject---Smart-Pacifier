@@ -36,6 +36,7 @@ message PPGData {
 
   LedData led = 1;
   TemperatureData temperature = 2;
+  int32 sensor_id = 3;
 
   uint64 timestamp_ms = 100;
 }

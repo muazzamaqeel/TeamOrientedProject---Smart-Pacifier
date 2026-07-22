@@ -387,6 +387,7 @@ class PPGData extends $pb.GeneratedMessage {
   static final $pb.BuilderInfo _i = $pb.BuilderInfo(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'PPGData', package: const $pb.PackageName(const $core.bool.fromEnvironment('protobuf.omit_message_names') ? '' : 'Protos'), createEmptyInstance: create)
     ..aOM<PPGData_LedData>(1, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'led', subBuilder: PPGData_LedData.create)
     ..aOM<PPGData_TemperatureData>(2, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'temperature', subBuilder: PPGData_TemperatureData.create)
+    ..a<$core.int>(3, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'sensorId', $pb.PbFieldType.O3)
     ..a<$fixnum.Int64>(100, const $core.bool.fromEnvironment('protobuf.omit_field_names') ? '' : 'timestampMs', $pb.PbFieldType.OU6, defaultOrMaker: $fixnum.Int64.ZERO)
     ..hasRequiredFields = false
   ;
@@ -395,6 +396,7 @@ class PPGData extends $pb.GeneratedMessage {
   factory PPGData({
     PPGData_LedData? led,
     PPGData_TemperatureData? temperature,
+    $core.int? sensorId,
     $fixnum.Int64? timestampMs,
   }) {
     final _result = create();
@@ -403,6 +405,9 @@ class PPGData extends $pb.GeneratedMessage {
     }
     if (temperature != null) {
       _result.temperature = temperature;
+    }
+    if (sensorId != null) {
+      _result.sensorId = sensorId;
     }
     if (timestampMs != null) {
       _result.timestampMs = timestampMs;
@@ -452,12 +457,21 @@ class PPGData extends $pb.GeneratedMessage {
   @$pb.TagNumber(2)
   PPGData_TemperatureData ensureTemperature() => $_ensure(1);
 
+  @$pb.TagNumber(3)
+  $core.int get sensorId => $_getIZ(2);
+  @$pb.TagNumber(3)
+  set sensorId($core.int v) { $_setSignedInt32(2, v); }
+  @$pb.TagNumber(3)
+  $core.bool hasSensorId() => $_has(2);
+  @$pb.TagNumber(3)
+  void clearSensorId() => clearField(3);
+
   @$pb.TagNumber(100)
-  $fixnum.Int64 get timestampMs => $_getI64(2);
+  $fixnum.Int64 get timestampMs => $_getI64(3);
   @$pb.TagNumber(100)
-  set timestampMs($fixnum.Int64 v) { $_setInt64(2, v); }
+  set timestampMs($fixnum.Int64 v) { $_setInt64(3, v); }
   @$pb.TagNumber(100)
-  $core.bool hasTimestampMs() => $_has(2);
+  $core.bool hasTimestampMs() => $_has(3);
   @$pb.TagNumber(100)
   void clearTimestampMs() => clearField(100);
 }

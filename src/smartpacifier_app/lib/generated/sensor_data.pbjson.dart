@@ -62,6 +62,7 @@ const PPGData$json = const {
   '2': const [
     const {'1': 'led', '3': 1, '4': 1, '5': 11, '6': '.Protos.PPGData.LedData', '10': 'led'},
     const {'1': 'temperature', '3': 2, '4': 1, '5': 11, '6': '.Protos.PPGData.TemperatureData', '10': 'temperature'},
+    const {'1': 'sensor_id', '3': 3, '4': 1, '5': 5, '10': 'sensorId'},
     const {'1': 'timestamp_ms', '3': 100, '4': 1, '5': 4, '10': 'timestampMs'},
   ],
   '3': const [PPGData_LedData$json, PPGData_TemperatureData$json],
@@ -86,7 +87,7 @@ const PPGData_TemperatureData$json = const {
 };
 
 /// Descriptor for `PPGData`. Decode as a `google.protobuf.DescriptorProto`.
-final $typed_data.Uint8List pPGDataDescriptor = $convert.base64Decode('CgdQUEdEYXRhEikKA2xlZBgBIAEoCzIXLlByb3Rvcy5QUEdEYXRhLkxlZERhdGFSA2xlZBJBCgt0ZW1wZXJhdHVyZRgCIAEoCzIfLlByb3Rvcy5QUEdEYXRhLlRlbXBlcmF0dXJlRGF0YVILdGVtcGVyYXR1cmUSIQoMdGltZXN0YW1wX21zGGQgASgEUgt0aW1lc3RhbXBNcxpICgdMZWREYXRhEhMKBWxlZF8xGAEgASgFUgRsZWQxEhMKBWxlZF8yGAIgASgFUgRsZWQyEhMKBWxlZF8zGAMgASgFUgRsZWQzGjMKD1RlbXBlcmF0dXJlRGF0YRIgCgt0ZW1wZXJhdHVyZRgBIAEoAlILdGVtcGVyYXR1cmU=');
+final $typed_data.Uint8List pPGDataDescriptor = $convert.base64Decode('CgdQUEdEYXRhEikKA2xlZBgBIAEoCzIXLlByb3Rvcy5QUEdEYXRhLkxlZERhdGFSA2xlZBJBCgt0ZW1wZXJhdHVyZRgCIAEoCzIfLlByb3Rvcy5QUEdEYXRhLlRlbXBlcmF0dXJlRGF0YVILdGVtcGVyYXR1cmUSGwoJc2Vuc29yX2lkGAMgASgFUghzZW5zb3JJZBIhCgx0aW1lc3RhbXBfbXMYZCABKARSC3RpbWVzdGFtcE1zGkgKB0xlZERhdGESEwoFbGVkXzEYASABKAVSBGxlZDESEwoFbGVkXzIYAiABKAVSBGxlZDISEwoFbGVkXzMYAyABKAVSBGxlZDMaMwoPVGVtcGVyYXR1cmVEYXRhEiAKC3RlbXBlcmF0dXJlGAEgASgCUgt0ZW1wZXJhdHVyZQ==');
 @$core.Deprecated('Use aIRFLOWDataDescriptor instead')
 const AIRFLOWData$json = const {
   '1': 'AIRFLOWData',
