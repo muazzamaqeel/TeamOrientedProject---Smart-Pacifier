@@ -65,6 +65,8 @@ class _CampaignCreationState extends State<CampaignCreation>
 
   Process? _pythonRecorder;
   bool _isStoppingCampaign = false;
+  String get _pythonExecutable =>
+    Platform.isWindows ? 'python.exe' : 'python3';
 
   final Directory _sessionBase =
       Directory('lib/screens/campaign_monitoring/sessions');
@@ -134,7 +136,10 @@ f.attrs["protobuf"] = "sensor_data.proto"
 f.close()
 ''';
 
-    final result = await Process.run("python3", ["-c", script]);
+    final result = await Process.run(
+      _pythonExecutable,
+      ["-c", script],
+    );
 
     if (result.exitCode != 0) {
       throw Exception(
@@ -160,7 +165,10 @@ f.attrs["end_ts"] = "$endIso"
 f.close()
 ''';
 
-    await Process.run("python3", ["-c", script]);
+    await Process.run(
+      _pythonExecutable,
+      ["-c", script],
+    );
   }
 
   /// ================================
@@ -196,7 +204,7 @@ f.close()
     }
 
     _pythonRecorder = await Process.start(
-      "python3",
+      _pythonExecutable,
       [
         "lib/screens/campaign_monitoring/sessions/python_scripts/recorder.py",
         path
